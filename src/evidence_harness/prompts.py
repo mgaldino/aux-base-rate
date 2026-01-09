@@ -28,7 +28,7 @@ Return JSON with:
 }}
 
 Rules:
-- Use ONLY evidence_db in {10, 20, 30, 40}. If unsure, choose 10.
+- Use ONLY evidence_db in {{10, 20, 30, 40}}. If unsure, choose 10.
 - direction must be YES or NO.
 - Each article_id must appear at most once.
 - Choose the single best mechanism for each article; leave an article unassigned by omitting it.
