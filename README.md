@@ -12,6 +12,11 @@ pip install -e ".[dev]"
 
 Python version: requires >=3.11 (tested with 3.13.3). Use `python3` from a 3.11+ install.
 
+Environment:
+```bash
+python3 -V
+```
+
 Set your API key:
 
 ```bash
