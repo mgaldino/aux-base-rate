@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 from base_rate_harness.io import read_jsonl
+from question_io import read_questions
 
 
 _OUTCOME_MAP = {
@@ -54,7 +55,7 @@ def _load_outcomes(path: Path) -> dict[str, float]:
 
 def _load_questions(path: Path) -> dict[str, dict]:
     questions: dict[str, dict] = {}
-    for row in read_jsonl(path):
+    for row in read_questions(path):
         qid = row.get("question_id")
         if qid:
             questions[str(qid)] = row

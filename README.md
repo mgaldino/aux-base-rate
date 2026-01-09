@@ -42,6 +42,11 @@ python3 -m base_rate_harness.runner \
 .venv/bin/python -m pytest -q
 ```
 
+## Test data
+
+Use `JSON_TEST.md` as the canonical test questions file (includes outcomes and resolution dates).
+Runners accept this format directly and normalize fields like `id`/`title` into the expected schema.
+
 ## Report (static HTML)
 
 Generate a simple performance report from JSONL outputs:

@@ -2,10 +2,11 @@ import argparse
 from datetime import datetime, timezone
 from typing import Optional
 
-from mechanism_harness.io import read_jsonl, write_jsonl
+from mechanism_harness.io import write_jsonl
 from mechanism_harness.llm import MechanismLLMClient, MechanismLLMConfig
 from mechanism_harness.parse import parse_mechanisms_output
 from mechanism_harness.prompts import SYSTEM_PROMPT, USER_PROMPT
+from question_io import read_questions
 
 
 def _utc_timestamp() -> str:
@@ -37,7 +38,7 @@ def run(
     temperature: float = 0.2,
     client: Optional[MechanismLLMClient] = None,
 ) -> dict:
-    questions = read_jsonl(input_path)
+    questions = read_questions(input_path)
     client = client or MechanismLLMClient()
     cfg = MechanismLLMConfig(model=model, temperature=temperature)
 

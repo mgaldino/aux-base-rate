@@ -2,11 +2,12 @@ import argparse
 from datetime import datetime, timezone
 from typing import Iterable, Optional
 
-from base_rate_harness.io import read_jsonl, write_jsonl
+from base_rate_harness.io import write_jsonl
 from base_rate_harness.llm import AnthropicMessagesClient, LLMConfig
 from base_rate_harness.parse import parse_model_output
 from base_rate_harness.prompts import default_registry, render_user_prompt, select_prompts
 from schema_validation import validate_rows
+from question_io import read_questions
 
 
 def _utc_timestamp() -> str:
@@ -71,7 +72,7 @@ def run(
     validate_schemas: bool = False,
     schemas_dir: Optional[str] = None,
 ) -> dict:
-    questions = read_jsonl(input_path)
+    questions = read_questions(input_path)
     _validate_questions(questions)
     if validate_schemas:
         validate_rows(questions, "questions.schema.json", schemas_dir=schemas_dir)

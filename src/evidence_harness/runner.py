@@ -8,6 +8,7 @@ from evidence_harness.io import read_jsonl, write_jsonl
 from evidence_harness.llm import EvidenceLLMClient, EvidenceLLMConfig
 from evidence_harness.parse import parse_assignments_output
 from evidence_harness.prompts import SYSTEM_PROMPT, USER_PROMPT
+from question_io import read_questions
 
 
 def _utc_timestamp() -> str:
@@ -78,7 +79,7 @@ def run(
     max_articles: int = 20,
     client: Optional[EvidenceLLMClient] = None,
 ) -> dict:
-    questions = read_jsonl(questions_path)
+    questions = read_questions(questions_path)
     mechanism_rows = read_jsonl(mechanisms_path)
     mechanism_map = {row.get("question_id"): row.get("mechanisms", []) for row in mechanism_rows}
 
