@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 from dataclasses import dataclass
 from pathlib import Path
@@ -27,6 +28,7 @@ class Report:
     outside: dict
     inside: dict
     brier: Optional[dict]
+    details: list[dict]
 
 
 def _normalize_outcome(value: object) -> Optional[float]:
@@ -48,6 +50,38 @@ def _load_outcomes(path: Path) -> dict[str, float]:
         if qid and normalized is not None:
             outcomes[str(qid)] = normalized
     return outcomes
+
+
+def _load_questions(path: Path) -> dict[str, dict]:
+    questions: dict[str, dict] = {}
+    for row in read_jsonl(path):
+        qid = row.get("question_id")
+        if qid:
+            questions[str(qid)] = row
+    return questions
+
+
+def _load_mechanisms(path: Optional[Path]) -> dict[str, list[dict]]:
+    if not path:
+        return {}
+    mapping: dict[str, list[dict]] = {}
+    for row in read_jsonl(path):
+        qid = row.get("question_id")
+        mechanisms = row.get("mechanisms") if isinstance(row.get("mechanisms"), list) else []
+        if qid:
+            mapping[str(qid)] = mechanisms
+    return mapping
+
+
+def _load_evidence(path: Optional[Path]) -> dict[str, list[dict]]:
+    if not path:
+        return {}
+    mapping: dict[str, list[dict]] = {}
+    for row in read_jsonl(path):
+        qid = row.get("question_id")
+        if qid:
+            mapping.setdefault(str(qid), []).append(row)
+    return mapping
 
 
 def _collect_outside(rows: Iterable[dict]) -> dict:
@@ -118,6 +152,8 @@ def build_report(
     outside_paths: list[Path],
     inside_paths: list[Path],
     questions_path: Optional[Path],
+    mechanisms_path: Optional[Path] = None,
+    evidence_path: Optional[Path] = None,
 ) -> Report:
     outside_rows: list[dict] = []
     for path in outside_paths:
@@ -131,6 +167,7 @@ def build_report(
     inside_metrics = _collect_inside(inside_rows)
 
     brier = None
+    details: list[dict] = []
     if questions_path:
         outcomes = _load_outcomes(questions_path)
         if outcomes:
@@ -138,8 +175,21 @@ def build_report(
                 "outside": _brier_scores(outside_rows, outcomes, "base_rate", scale=0.01),
                 "inside": _brier_scores(inside_rows, outcomes, "posterior", scale=1.0),
             }
-
-    return Report(outside=outside_metrics, inside=inside_metrics, brier=brier)
+        questions = _load_questions(questions_path)
+        mechanisms = _load_mechanisms(mechanisms_path)
+        evidence = _load_evidence(evidence_path)
+        for qid, question in questions.items():
+            mech_list = mechanisms.get(qid, [])
+            ev_list = evidence.get(qid, [])
+            details.append(
+                {
+                    "question_id": qid,
+                    "question": question.get("question"),
+                    "mechanisms": mech_list,
+                    "evidence": ev_list,
+                }
+            )
+    return Report(outside=outside_metrics, inside=inside_metrics, brier=brier, details=details)
 
 
 def render_html(report: Report) -> str:
@@ -227,6 +277,47 @@ def render_html(report: Report) -> str:
             ]
         )
 
+    if report.details:
+        parts.extend(
+            [
+                "<div class=\"section\">",
+                "<h2>Question Details</h2>",
+            ]
+        )
+        for item in report.details:
+            question_text = item.get("question") or "-"
+            qid = item.get("question_id") or "-"
+            parts.append("<h3>{}</h3>".format(html.escape(f"{qid}: {question_text}")))
+            mechanisms = item.get("mechanisms", [])
+            evidence = item.get("evidence", [])
+            parts.append("<strong>Mechanisms</strong>")
+            parts.append("<ul>")
+            for mech in mechanisms:
+                label = mech.get("label") or "-"
+                mech_id = mech.get("id") or "-"
+                parts.append("<li>{}</li>".format(html.escape(f"{mech_id}: {label}")))
+            if not mechanisms:
+                parts.append("<li>-</li>")
+            parts.append("</ul>")
+
+            parts.append("<strong>Evidence</strong>")
+            if evidence:
+                parts.append("<ul>")
+                for ev in evidence:
+                    summary = ev.get("summary") or ev.get("notes") or "-"
+                    mech_id = ev.get("mechanism_id") or "-"
+                    direction = ev.get("direction") or "-"
+                    db = ev.get("evidence_db")
+                    parts.append(
+                        "<li>{}</li>".format(
+                            html.escape(f"{mech_id} {direction} db={db}: {summary}")
+                        )
+                    )
+                parts.append("</ul>")
+            else:
+                parts.append("<div>-</div>")
+        parts.append("</div>")
+
     parts.extend(["</body>", "</html>"])
     return "\n".join(parts)
 
@@ -249,6 +340,8 @@ def main() -> None:
     parser.add_argument("--outside", help="Outside-view results JSONL (comma-separated)")
     parser.add_argument("--inside", help="Inside-view results JSONL (comma-separated)")
     parser.add_argument("--questions", help="Questions JSONL with outcome field")
+    parser.add_argument("--mechanisms", help="Mechanisms JSONL")
+    parser.add_argument("--evidence", help="Evidence JSONL")
     parser.add_argument("--output", required=True, help="Output HTML path")
     args = parser.parse_args()
 
@@ -256,7 +349,16 @@ def main() -> None:
     inside_paths = _split_paths(args.inside)
     questions_path = Path(args.questions) if args.questions else None
 
-    report = build_report(outside_paths, inside_paths, questions_path)
+    mechanisms_path = Path(args.mechanisms) if args.mechanisms else None
+    evidence_path = Path(args.evidence) if args.evidence else None
+
+    report = build_report(
+        outside_paths,
+        inside_paths,
+        questions_path,
+        mechanisms_path=mechanisms_path,
+        evidence_path=evidence_path,
+    )
     html_text = render_html(report)
     Path(args.output).write_text(html_text, encoding="utf-8")
 

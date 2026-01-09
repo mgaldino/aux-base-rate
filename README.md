@@ -51,12 +51,41 @@ report-harness \
   --outside results.jsonl \
   --inside results.posterior.jsonl \
   --questions questions.sample.jsonl \
+  --mechanisms mechanisms.jsonl \
+  --evidence evidence.jsonl \
   --output report.html
 ```
 
 Notes:
 - `--questions` is optional; if provided with an `outcome` field, the report includes Brier scores.
 - You can pass comma-separated paths to `--outside` or `--inside`.
+ - Use `--mechanisms` and `--evidence` to include per-question details.
+
+## Mechanisms (LLM)
+
+Generate mechanisms from questions:
+
+```bash
+mechanism-harness \
+  --input questions.sample.jsonl \
+  --output mechanisms.jsonl \
+  --model claude-3-haiku-20240307 \
+  --temperature 0.2
+```
+
+## Evidence (GDELT + LLM)
+
+Fetch articles from GDELT and map to mechanisms with the LLM:
+
+```bash
+evidence-harness \
+  --questions questions.sample.jsonl \
+  --mechanisms mechanisms.jsonl \
+  --output evidence.jsonl \
+  --model claude-3-haiku-20240307 \
+  --gdelt-timespan 30d \
+  --gdelt-max-records 50
+```
 
 ## Prompts
 All variants share the same system prompt (exact text):

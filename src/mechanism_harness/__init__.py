@@ -1,0 +1,1 @@
+"""Mechanism generation harness."""

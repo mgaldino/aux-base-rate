@@ -12,6 +12,8 @@
     "novelty_score": { "type": "number" },
     "source": { "type": "string" },
     "timestamp": { "type": "string" },
+    "url": { "type": "string" },
+    "summary": { "type": "string" },
     "notes": { "type": "string" }
   },
   "additionalProperties": true
