@@ -25,6 +25,7 @@ execucao reprodutivel via arquivos JSONL.
 - Sem narrativa especifica sem mecanismo + sinal observavel.
 - Evidencias com `evidence_db` negativo devem ser descartadas e logadas.
 - Direcao invalida deve ser descartada e logada.
+- `evidence_db` deve estar no conjunto discreto {10, 20, 30, 40}; fora disso, descartar e logar.
 
 ## Data Schemas (JSONL)
 
@@ -127,6 +128,7 @@ For each mechanism `m`:
    - clamp `novelty_score` para [0, 1] (logar se ajustado)
    - descartar `evidence_db` < 10 (logar)
    - descartar `evidence_db` negativo (logar)
+   - descartar `evidence_db` fora de {10, 20, 30, 40} (logar)
    - descartar direcao invalida (logar)
 3) Compute effective dB using correlation control (MVP):
    - Opcoes principais a testar:
@@ -152,6 +154,7 @@ Direction handling:
 1) Tests:
    - descarte de evidencias < 10 dB
    - descarte de evidencias com `evidence_db` negativo
+   - descarte de evidencias com `evidence_db` fora de {10, 20, 30, 40}
    - direcao SIM/NAO
    - controle de correlacao (top-k e desconto por fonte; cap como fallback)
    - log de descartes (motivos esperados)

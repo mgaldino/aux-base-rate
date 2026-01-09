@@ -86,7 +86,7 @@ def test_normalize_evidence_discards_invalid_novelty() -> None:
         "question_id": "q1",
         "mechanism_id": "m1",
         "direction": "YES",
-        "evidence_db": 12,
+        "evidence_db": 10,
         "novelty_score": "oops",
         "source": "news",
     }
@@ -96,13 +96,30 @@ def test_normalize_evidence_discards_invalid_novelty() -> None:
     assert discard["reason"] == "invalid_novelty"
     assert adjustments == []
 
+
+def test_normalize_evidence_discards_invalid_db_level() -> None:
+    evidence = {
+        "evidence_id": "ev_bad_db_level",
+        "question_id": "q1",
+        "mechanism_id": "m1",
+        "direction": "YES",
+        "evidence_db": 15,
+        "novelty_score": 1.0,
+        "source": "news",
+    }
+    normalized, discard, adjustments = parse.normalize_evidence(evidence, {"m1"})
+    assert normalized is None
+    assert discard is not None
+    assert discard["reason"] == "invalid_db_level"
+    assert adjustments == []
+
 def test_normalize_evidence_clamps_novelty() -> None:
     evidence = {
         "evidence_id": "ev2",
         "question_id": "q1",
         "mechanism_id": "m1",
         "direction": "YES",
-        "evidence_db": 12,
+        "evidence_db": 10,
         "novelty_score": 1.2,
         "source": "news",
         "timestamp": "2023-01-01T00:00:00Z",
@@ -219,7 +236,7 @@ def test_runner_writes_logs(tmp_path: Path) -> None:
             "question_id": "q1",
             "mechanism_id": "m1",
             "direction": "YES",
-            "evidence_db": 12,
+            "evidence_db": 10,
             "novelty_score": 1.2,
             "source": "news",
             "timestamp": "2023-01-01T00:00:00Z",

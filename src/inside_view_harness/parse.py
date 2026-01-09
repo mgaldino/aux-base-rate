@@ -15,6 +15,8 @@ _DIRECTION_MAP = {
     "N\u00c3O": "NO",
 }
 
+_VALID_DB_LEVELS = {10.0, 20.0, 30.0, 40.0}
+
 
 @dataclass(frozen=True)
 class NormalizedEvidence:
@@ -66,6 +68,8 @@ def normalize_evidence(
         return None, _discard_record(evidence, "db_negative"), []
     if evidence_db < 10:
         return None, _discard_record(evidence, "db_below_threshold"), []
+    if evidence_db not in _VALID_DB_LEVELS:
+        return None, _discard_record(evidence, "invalid_db_level"), []
 
     novelty_score, adjustment, novelty_error = _normalize_novelty(evidence)
     if novelty_error:
