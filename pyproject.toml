@@ -12,6 +12,7 @@ dependencies = [
   "anthropic",
   "pydantic",
   "tqdm",
+  "jsonschema",
 ]
 
 [project.optional-dependencies]

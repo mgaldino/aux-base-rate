@@ -257,6 +257,10 @@ inside-view-harness \
   --adjustment-log adjustments.jsonl
 ```
 
+Schema validation (optional, available on all runners):
+- `--validate-schemas` to validate inputs/outputs against `schemas/`.
+- `--schemas-dir` to point to a custom schema directory.
+
 Inside-view example files:
 - `examples/inside_view/priors.jsonl`
 - `examples/inside_view/mechanisms.jsonl`

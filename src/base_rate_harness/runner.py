@@ -6,6 +6,7 @@ from base_rate_harness.io import read_jsonl, write_jsonl
 from base_rate_harness.llm import AnthropicMessagesClient, LLMConfig
 from base_rate_harness.parse import parse_model_output
 from base_rate_harness.prompts import default_registry, render_user_prompt, select_prompts
+from schema_validation import validate_rows
 
 
 def _utc_timestamp() -> str:
@@ -67,10 +68,16 @@ def run(
     temperature: float,
     append: bool = False,
     client: Optional[AnthropicMessagesClient] = None,
+    validate_schemas: bool = False,
+    schemas_dir: Optional[str] = None,
 ) -> dict:
     questions = read_jsonl(input_path)
     _validate_questions(questions)
+    if validate_schemas:
+        validate_rows(questions, "questions.schema.json", schemas_dir=schemas_dir)
     records = list(build_records(questions, prompt_ids, model, temperature, client=client))
+    if validate_schemas:
+        validate_rows(records, "outside_view_output.schema.json", schemas_dir=schemas_dir)
     n_written = write_jsonl(output_path, records, append=append)
     n_parse_failures = sum(1 for r in records if r.get("parse_error"))
     n_call_failures = sum(1 for r in records if r.get("call_error"))
@@ -102,6 +109,8 @@ def main() -> None:
     parser.add_argument("--prompts", required=True)
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--append", action="store_true")
+    parser.add_argument("--validate-schemas", action="store_true")
+    parser.add_argument("--schemas-dir")
     args = parser.parse_args()
 
     prompt_ids = [p.strip() for p in args.prompts.split(",") if p.strip()]
@@ -112,6 +121,8 @@ def main() -> None:
         prompt_ids=prompt_ids,
         temperature=args.temperature,
         append=args.append,
+        validate_schemas=args.validate_schemas,
+        schemas_dir=args.schemas_dir,
     )
 
     print(

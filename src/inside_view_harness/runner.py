@@ -6,6 +6,7 @@ from typing import Optional
 from inside_view_harness.inside_view import InsideViewConfig, apply_inside_view
 from inside_view_harness.io import read_jsonl, write_jsonl
 from inside_view_harness.parse import normalize_evidence
+from schema_validation import validate_rows
 
 
 def _utc_timestamp() -> str:
@@ -72,10 +73,16 @@ def run(
     cap_db: float = 15.0,
     source_repeat_discount: float = 0.5,
     run_ts: Optional[str] = None,
+    validate_schemas: bool = False,
+    schemas_dir: Optional[str] = None,
 ) -> dict:
     prior_rows = read_jsonl(priors_path)
     mechanism_rows = read_jsonl(mechanisms_path)
     evidence_rows = read_jsonl(evidence_path)
+    if validate_schemas:
+        validate_rows(prior_rows, "priors.schema.json", schemas_dir=schemas_dir)
+        validate_rows(mechanism_rows, "mechanisms.schema.json", schemas_dir=schemas_dir)
+        validate_rows(evidence_rows, "evidence.schema.json", schemas_dir=schemas_dir)
 
     mechanism_map = _build_mechanism_map(mechanism_rows)
     mechanism_ids_map = {
@@ -150,6 +157,13 @@ def run(
         }
         records.append(record)
 
+    if validate_schemas:
+        validate_rows(records, "inside_view_output.schema.json", schemas_dir=schemas_dir)
+        if discards:
+            validate_rows(discards, "discard_log.schema.json", schemas_dir=schemas_dir)
+        if adjustments:
+            validate_rows(adjustments, "adjustment_log.schema.json", schemas_dir=schemas_dir)
+
     n_written = write_jsonl(output_path, records, append=False)
     n_discards = 0
     n_adjustments = 0
@@ -178,6 +192,8 @@ def main() -> None:
     parser.add_argument("--cap-db", type=float, default=15.0)
     parser.add_argument("--source-repeat-discount", type=float, default=0.5)
     parser.add_argument("--run-ts", help="Override run timestamp (ISO-8601)")
+    parser.add_argument("--validate-schemas", action="store_true")
+    parser.add_argument("--schemas-dir")
     args = parser.parse_args()
 
     summary = run(
@@ -192,6 +208,8 @@ def main() -> None:
         cap_db=args.cap_db,
         source_repeat_discount=args.source_repeat_discount,
         run_ts=args.run_ts,
+        validate_schemas=args.validate_schemas,
+        schemas_dir=args.schemas_dir,
     )
 
     print(

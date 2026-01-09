@@ -22,6 +22,8 @@ def run(
     cap_db: float = 15.0,
     source_repeat_discount: float = 0.5,
     client: Optional[AnthropicMessagesClient] = None,
+    validate_schemas: bool = False,
+    schemas_dir: Optional[str] = None,
 ) -> dict:
     outside_summary = run_outside_view(
         input_path=questions_path,
@@ -31,6 +33,8 @@ def run(
         temperature=temperature,
         append=False,
         client=client,
+        validate_schemas=validate_schemas,
+        schemas_dir=schemas_dir,
     )
     inside_summary = run_inside_view(
         priors_path=priors_output_path,
@@ -43,6 +47,8 @@ def run(
         top_k=top_k,
         cap_db=cap_db,
         source_repeat_discount=source_repeat_discount,
+        validate_schemas=validate_schemas,
+        schemas_dir=schemas_dir,
     )
     return {"outside": outside_summary, "inside": inside_summary}
 
@@ -63,6 +69,8 @@ def main() -> None:
     parser.add_argument("--top-k", type=int, default=3)
     parser.add_argument("--cap-db", type=float, default=15.0)
     parser.add_argument("--source-repeat-discount", type=float, default=0.5)
+    parser.add_argument("--validate-schemas", action="store_true")
+    parser.add_argument("--schemas-dir")
     args = parser.parse_args()
 
     prompt_ids = [p.strip() for p in args.prompts.split(",") if p.strip()]
@@ -81,6 +89,8 @@ def main() -> None:
         top_k=args.top_k,
         cap_db=args.cap_db,
         source_repeat_discount=args.source_repeat_discount,
+        validate_schemas=args.validate_schemas,
+        schemas_dir=args.schemas_dir,
     )
 
     outside = summary["outside"]
