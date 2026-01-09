@@ -245,6 +245,24 @@ Inside-view example files:
 - `examples/inside_view/evidence.jsonl`
 - `examples/inside_view/posterior.jsonl`
 
+Real run example (BR_Q005):
+- `examples/runs/br_q005/priors.br_q005.jsonl`
+- `examples/runs/br_q005/mechanisms.br_q005.jsonl`
+- `examples/runs/br_q005/evidence.br_q005.jsonl`
+- `examples/runs/br_q005/results.priors.br_q005.jsonl`
+- `examples/runs/br_q005/results.inside_view.br_q005.jsonl`
+- `examples/runs/br_q005/results.combined.br_q005.jsonl`
+- `examples/runs/br_q005/discarded.br_q005.jsonl`
+- `examples/runs/br_q005/adjustments.br_q005.jsonl`
+- `examples/runs/br_q005/discarded.combined.br_q005.jsonl`
+- `examples/runs/br_q005/adjustments.combined.br_q005.jsonl`
+
+Out of MVP (next iteration candidates):
+- Evidence deduplication and novelty scoring heuristics (beyond manual `novelty_score`).
+- Mechanism `prior_weight` and `confidence` usage in updates.
+- Correlation A/B experiments (top-k vs source-discount) and calibration.
+- Combined runner options for manual priors and resume/append runs.
+
 ## Combined runner (MVP)
 Runs outside-view first and then inside-view using the outside output as priors.
 

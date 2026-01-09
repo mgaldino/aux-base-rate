@@ -1,0 +1,1 @@
+{"question_id": "BR_Q005", "prompt_id": "manual", "prior": 0.3, "posterior": 0.30000000000000004, "by_mechanism": [{"mechanism_id": "m1_precedent", "raw_db": -10.0, "effective_db": -10.0}, {"mechanism_id": "m2_leadership", "raw_db": 10.0, "effective_db": 10.0}], "meta": {"run_ts": "2026-01-09T17:53:25+00:00", "version": "inside_view_v1"}}

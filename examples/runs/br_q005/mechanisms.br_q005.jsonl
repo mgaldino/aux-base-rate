@@ -1,0 +1,1 @@
+{"question_id":"BR_Q005","mechanisms":[{"id":"m1_precedent","label":"precedentes do TSE em cassacoes/inelegibilidade","prior_weight":0.34},{"id":"m2_leadership","label":"inclinacao da presidencia do TSE","prior_weight":0.33},{"id":"m3_case_strength","label":"qualidade juridica da acusacao","prior_weight":0.33}]}
