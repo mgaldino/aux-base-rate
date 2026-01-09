@@ -1,0 +1,77 @@
+import json
+import math
+from pathlib import Path
+
+import pytest
+
+from inside_view_harness import runner
+
+
+def _write_jsonl(path: Path, rows: list[dict]) -> None:
+    with path.open("w", encoding="utf-8") as f:
+        for row in rows:
+            f.write(json.dumps(row) + "\n")
+
+
+def test_runner_raises_on_missing_base_rate(tmp_path: Path) -> None:
+    priors_path = tmp_path / "priors.jsonl"
+    mechanisms_path = tmp_path / "mechanisms.jsonl"
+    evidence_path = tmp_path / "evidence.jsonl"
+    output_path = tmp_path / "output.jsonl"
+
+    _write_jsonl(
+        priors_path, [{"question_id": "q1", "prompt_id": "v0", "base_rate": None}]
+    )
+    _write_jsonl(mechanisms_path, [{"question_id": "q1", "mechanisms": [{"id": "m1"}]}])
+    _write_jsonl(evidence_path, [])
+
+    with pytest.raises(ValueError, match="missing base_rate"):
+        runner.run(
+            priors_path=str(priors_path),
+            mechanisms_path=str(mechanisms_path),
+            evidence_path=str(evidence_path),
+            output_path=str(output_path),
+        )
+
+
+def test_runner_raises_on_missing_mechanisms(tmp_path: Path) -> None:
+    priors_path = tmp_path / "priors.jsonl"
+    mechanisms_path = tmp_path / "mechanisms.jsonl"
+    evidence_path = tmp_path / "evidence.jsonl"
+    output_path = tmp_path / "output.jsonl"
+
+    _write_jsonl(priors_path, [{"question_id": "q1", "prompt_id": "v0", "base_rate": 30}])
+    _write_jsonl(mechanisms_path, [])
+    _write_jsonl(evidence_path, [])
+
+    with pytest.raises(ValueError, match="missing mechanisms"):
+        runner.run(
+            priors_path=str(priors_path),
+            mechanisms_path=str(mechanisms_path),
+            evidence_path=str(evidence_path),
+            output_path=str(output_path),
+        )
+
+
+def test_runner_keeps_prior_without_evidence(tmp_path: Path) -> None:
+    priors_path = tmp_path / "priors.jsonl"
+    mechanisms_path = tmp_path / "mechanisms.jsonl"
+    evidence_path = tmp_path / "evidence.jsonl"
+    output_path = tmp_path / "output.jsonl"
+
+    _write_jsonl(priors_path, [{"question_id": "q1", "prompt_id": "v0", "base_rate": 30}])
+    _write_jsonl(mechanisms_path, [{"question_id": "q1", "mechanisms": [{"id": "m1"}]}])
+    _write_jsonl(evidence_path, [])
+
+    summary = runner.run(
+        priors_path=str(priors_path),
+        mechanisms_path=str(mechanisms_path),
+        evidence_path=str(evidence_path),
+        output_path=str(output_path),
+    )
+    assert summary["n_records_written"] == 1
+
+    with output_path.open("r", encoding="utf-8") as f:
+        record = json.loads(f.readline())
+    assert math.isclose(record["prior"], 0.3, rel_tol=1e-9)
+    assert math.isclose(record["posterior"], 0.3, rel_tol=1e-9)
