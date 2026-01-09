@@ -118,7 +118,7 @@ For each mechanism `m`:
      a) Top-k por mecanismo (pelo maior `evidence_db * novelty_score`; k=3)
      b) Desconto por fonte (reduzir peso para `source` repetido)
    - Fallback:
-     c) Cap por mecanismo (limitar `effective_db_m` a ±20 dB)
+     c) Cap por mecanismo (limitar `effective_db_m` a ±15 dB)
    - Uma unica opcao deve ser default no MVP, mantendo as outras como alternativa
      documentada.
    - `raw_db = sum(evidence_db_i * novelty_score_i * direction_sign)`
