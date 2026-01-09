@@ -25,6 +25,7 @@ dev = [
 base-rate-harness = "base_rate_harness.runner:main"
 inside-view-harness = "inside_view_harness.runner:main"
 combined-harness = "combined_harness.runner:main"
+report-harness = "reporting.report:main"
 
 [tool.ruff]
 line-length = 100

@@ -42,6 +42,22 @@ python3 -m base_rate_harness.runner \
 .venv/bin/python -m pytest -q
 ```
 
+## Report (static HTML)
+
+Generate a simple performance report from JSONL outputs:
+
+```bash
+report-harness \
+  --outside results.jsonl \
+  --inside results.posterior.jsonl \
+  --questions questions.sample.jsonl \
+  --output report.html
+```
+
+Notes:
+- `--questions` is optional; if provided with an `outcome` field, the report includes Brier scores.
+- You can pass comma-separated paths to `--outside` or `--inside`.
+
 ## Prompts
 All variants share the same system prompt (exact text):
 
