@@ -89,6 +89,7 @@ evidence-harness \
   --output evidence.jsonl \
   --model claude-3-haiku-20240307 \
   --gdelt-timespan 30d \
+  --gdelt-window-days 365 \
   --gdelt-max-records 50
 ```
 

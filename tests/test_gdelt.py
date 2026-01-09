@@ -10,6 +10,18 @@ def test_build_gdelt_url_includes_query() -> None:
     assert "timespan=1m" in url
 
 
+def test_build_gdelt_url_accepts_date_range() -> None:
+    url = build_gdelt_url(
+        "bolsonaro",
+        max_records=5,
+        start_datetime="20240101000000",
+        end_datetime="20240131235959",
+    )
+    assert "startdatetime=20240101000000" in url
+    assert "enddatetime=20240131235959" in url
+    assert "timespan" not in url
+
+
 def test_parse_gdelt_response_extracts_articles() -> None:
     payload = {
         "articles": [

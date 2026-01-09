@@ -15,14 +15,20 @@ def build_gdelt_url(
     timespan: str = "7d",
     mode: str = "ArtList",
     fmt: str = "json",
+    start_datetime: Optional[str] = None,
+    end_datetime: Optional[str] = None,
 ) -> str:
     params = {
         "query": query,
         "mode": mode,
         "format": fmt,
         "maxrecords": max_records,
-        "timespan": timespan,
     }
+    if start_datetime and end_datetime:
+        params["startdatetime"] = start_datetime
+        params["enddatetime"] = end_datetime
+    else:
+        params["timespan"] = timespan
     return "{}?{}".format(GDELT_DOC_API, urllib.parse.urlencode(params))
 
 

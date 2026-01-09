@@ -1,6 +1,6 @@
 import argparse
 import hashlib
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from evidence_harness.gdelt import build_gdelt_url, build_query, fetch_gdelt_articles
@@ -25,6 +25,20 @@ def _normalize_optional(value: object) -> str:
 
 def _article_id(url: str) -> str:
     return hashlib.sha256(url.encode("utf-8")).hexdigest()[:12]
+
+
+def _parse_reference_date(value: object) -> Optional[date]:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value)).date()
+    except ValueError:
+        return None
+
+
+def _gdelt_datetime(value: date, end_of_day: bool) -> str:
+    time = "235959" if end_of_day else "000000"
+    return value.strftime("%Y%m%d") + time
 
 
 def _render_articles(articles: list[dict], max_articles: int) -> tuple[str, dict[str, dict]]:
@@ -76,6 +90,7 @@ def run(
     gdelt_timespan: str = "30d",
     gdelt_max_records: int = 50,
     gdelt_extra_query: Optional[str] = "politics OR election OR court OR congress OR government",
+    gdelt_window_days: Optional[int] = 365,
     max_articles: int = 20,
     client: Optional[EvidenceLLMClient] = None,
 ) -> dict:
@@ -96,7 +111,17 @@ def run(
         question_text = question.get("question") or ""
         region = question.get("region") or ""
         query = build_query(question_text, region, gdelt_extra_query)
-        url = build_gdelt_url(query, max_records=gdelt_max_records, timespan=gdelt_timespan)
+        ref_date = _parse_reference_date(question.get("reference_date"))
+        if ref_date and gdelt_window_days:
+            start = ref_date - timedelta(days=gdelt_window_days)
+            url = build_gdelt_url(
+                query,
+                max_records=gdelt_max_records,
+                start_datetime=_gdelt_datetime(start, end_of_day=False),
+                end_datetime=_gdelt_datetime(ref_date, end_of_day=True),
+            )
+        else:
+            url = build_gdelt_url(query, max_records=gdelt_max_records, timespan=gdelt_timespan)
         articles = fetch_gdelt_articles(url)
 
         user_prompt, article_map = _render_user_prompt(question, mechanisms, articles, max_articles)
@@ -155,6 +180,7 @@ def main() -> None:
     parser.add_argument("--gdelt-timespan", default="30d")
     parser.add_argument("--gdelt-max-records", type=int, default=50)
     parser.add_argument("--gdelt-extra-query", default="politics OR election OR court OR congress OR government")
+    parser.add_argument("--gdelt-window-days", type=int, default=365)
     parser.add_argument("--max-articles", type=int, default=20)
     args = parser.parse_args()
 
@@ -167,6 +193,7 @@ def main() -> None:
         gdelt_timespan=args.gdelt_timespan,
         gdelt_max_records=args.gdelt_max_records,
         gdelt_extra_query=args.gdelt_extra_query,
+        gdelt_window_days=args.gdelt_window_days,
         max_articles=args.max_articles,
     )
     print(
