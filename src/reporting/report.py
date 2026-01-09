@@ -45,7 +45,7 @@ def _normalize_outcome(value: object) -> Optional[float]:
 
 def _load_outcomes(path: Path) -> dict[str, float]:
     outcomes: dict[str, float] = {}
-    for row in read_jsonl(path):
+    for row in read_questions(path):
         qid = row.get("question_id")
         normalized = _normalize_outcome(row.get("outcome"))
         if qid and normalized is not None:
