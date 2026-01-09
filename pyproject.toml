@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "base-rate-harness"
+version = "0.1.0"
+description = "MVP prompt-iteration harness for outside-view base rates."
+requires-python = ">=3.11"
+readme = "README.md"
+dependencies = [
+  "anthropic",
+  "pydantic",
+  "tqdm",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "ruff",
+]
+
+[project.scripts]
+base-rate-harness = "base_rate_harness.runner:main"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

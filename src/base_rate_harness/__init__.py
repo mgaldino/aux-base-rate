@@ -1,0 +1,1 @@
+"""Base rate harness package."""
