@@ -23,6 +23,8 @@ execucao reprodutivel via arquivos JSONL.
 - Evidencias no mesmo mecanismo sao correlacionadas.
 - Controle de correlacao via estrategia configuravel (top-k, desconto por fonte, cap).
 - Sem narrativa especifica sem mecanismo + sinal observavel.
+- Cada mecanismo deve ter `id` valido; mecanismos sem `id` sao erro de entrada.
+- Cada `question_id` em priors deve ter mecanismos correspondentes.
 - Evidencias com `evidence_db` negativo devem ser descartadas e logadas.
 - Evidencias com `evidence_db` ausente ou invalido devem ser descartadas e logadas.
 - Direcao invalida deve ser descartada e logada.
@@ -131,6 +133,15 @@ Output record (one line per (question_id x prompt_id)):
 }
 ```
 
+CLI (inside-view):
+- `--strategy` in {top_k, source_discount, cap}
+- `--top-k`, `--cap-db`, `--source-repeat-discount`
+- `--run-ts` (override `meta.run_ts` for deterministic runs)
+
+Reproducibilidade:
+- Para outputs deterministas, passe `--run-ts` no CLI.
+- Exemplo minimo: `examples/runs/golden_min/`.
+
 ## Update Rule (dB)
 
 Let `p` be the outside-view base rate (prior).
@@ -153,8 +164,7 @@ For each mechanism `m`:
      b) Desconto por fonte (reduzir peso para `source` repetido)
    - Fallback:
      c) Cap por mecanismo (limitar `effective_db_m` a ±15 dB)
-   - Uma unica opcao deve ser default no MVP, mantendo as outras como alternativa
-     documentada.
+   - Default no MVP: top-k (k=3), mantendo as outras como alternativa documentada.
    - `raw_db = sum(evidence_db_i * novelty_score_i * direction_sign)`
    - `effective_db_m = raw_db` apos aplicar a estrategia escolhida
 
