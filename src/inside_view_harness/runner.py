@@ -1,4 +1,5 @@
 import argparse
+import math
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -72,7 +73,17 @@ def run(
         base_rate = prior_row.get("base_rate")
         if base_rate is None:
             raise ValueError(f"missing base_rate for question_id={qid} prompt_id={prompt_id}")
-        prior = base_rate / 100.0
+        try:
+            base_rate_value = float(base_rate)
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"invalid_base_rate for question_id={qid} prompt_id={prompt_id}"
+            ) from None
+        if not math.isfinite(base_rate_value) or base_rate_value <= 0 or base_rate_value >= 100:
+            raise ValueError(
+                f"base_rate_out_of_bounds for question_id={qid} prompt_id={prompt_id}"
+            )
+        prior = base_rate_value / 100.0
         mechanisms = mechanism_map.get(qid)
         if mechanisms is None:
             raise ValueError(f"missing mechanisms for question_id={qid}")

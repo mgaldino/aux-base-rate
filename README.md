@@ -224,6 +224,7 @@ Notes:
 - Evidence with missing or non-numeric `evidence_db` is discarded and logged.
 - Evidence with invalid `novelty_score` is discarded and logged.
 - Evidence with missing/unknown mechanism is discarded and logged.
+- `base_rate` must be strictly between 0 and 100 (exclusive).
 
 Inside-view CLI:
 ```bash
@@ -235,6 +236,12 @@ inside-view-harness \
   --discard-log discarded.jsonl \
   --adjustment-log adjustments.jsonl
 ```
+
+Inside-view example files:
+- `examples/inside_view/priors.jsonl`
+- `examples/inside_view/mechanisms.jsonl`
+- `examples/inside_view/evidence.jsonl`
+- `examples/inside_view/posterior.jsonl`
 
 ## Combined runner (MVP)
 Runs outside-view first and then inside-view using the outside output as priors.

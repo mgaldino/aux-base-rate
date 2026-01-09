@@ -1,0 +1,1 @@
+{"question_id":"Q1","prompt_id":"v0","prior":0.3,"posterior":0.8108108108108109,"by_mechanism":[{"mechanism_id":"m1_precedent","raw_db":10.0,"effective_db":10.0}],"meta":{"run_ts":"2025-01-01T00:00:00Z","version":"inside_view_v1"}}
