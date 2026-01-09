@@ -59,6 +59,13 @@ Evidence items (one line per item):
 }
 ```
 
+LLM prompt (evidence_db):
+- O modelo deve escolher apenas entre {10, 20, 30, 40}.
+- Interprete dB como forca de evidencia a favor do mecanismo-alvo versus uma explicacao rival.
+- Quanto mais a evidencia for especificamente consistente com o mecanismo-alvo (e inconsistente
+  com explicacoes rivais plausiveis), maior o dB.
+- Se nao conseguir justificar pelo menos 10 dB, retornar 0 e o item sera descartado.
+
 Discard log (one line per discarded item):
 ```json
 {
