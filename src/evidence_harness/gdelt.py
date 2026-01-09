@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import urllib.parse
 import urllib.request
 from typing import Optional
@@ -66,10 +67,62 @@ def parse_gdelt_response(text: str) -> list[dict]:
     return normalized
 
 
+_STOPWORDS = {
+    "will",
+    "be",
+    "by",
+    "the",
+    "and",
+    "or",
+    "of",
+    "a",
+    "o",
+    "a",
+    "e",
+    "de",
+    "da",
+    "do",
+    "dos",
+    "das",
+    "em",
+    "no",
+    "na",
+    "nos",
+    "nas",
+    "para",
+    "até",
+    "ate",
+    "será",
+    "sera",
+    "serao",
+    "serão",
+}
+
+
 def build_query(question: str, region: Optional[str], extra_query: Optional[str]) -> str:
-    parts = [question]
+    tokens = _extract_keywords(question)
+    if tokens:
+        base = " OR ".join(tokens)
+        query = f"({base})"
+    else:
+        query = question
     if region:
-        parts.append(region)
+        query = f"{query} AND {region}"
     if extra_query:
-        parts.append(extra_query)
-    return " AND ".join(part for part in parts if part)
+        query = f"{query} AND ({extra_query})"
+    return query
+
+
+def _extract_keywords(text: str, max_tokens: int = 6) -> list[str]:
+    words = re.findall(r"[\\w\\-]{4,}", text.lower())
+    tokens: list[str] = []
+    for word in words:
+        if word in _STOPWORDS:
+            continue
+        if word.isdigit():
+            continue
+        if word not in tokens:
+            tokens.append(word)
+        if len(tokens) >= max_tokens:
+            break
+    return tokens

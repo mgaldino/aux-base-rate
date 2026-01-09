@@ -36,3 +36,22 @@ def test_parse_gdelt_response_extracts_articles() -> None:
     articles = parse_gdelt_response(json.dumps(payload))
     assert len(articles) == 1
     assert articles[0]["url"] == "https://example.com/a"
+
+
+def test_build_query_uses_keywords_and_region() -> None:
+    query = build_gdelt_url(
+        "dummy",
+        max_records=5,
+        timespan="1m",
+    )
+    assert "query=dummy" in query
+
+    from evidence_harness.gdelt import build_query
+
+    q = build_query(
+        "O TSE declarará Jair Bolsonaro inelegível até 15/07/2023?",
+        "Brasil",
+        "politics",
+    )
+    assert "AND Brasil" in q
+    assert "AND (politics)" in q
