@@ -14,11 +14,22 @@ def _utc_timestamp() -> str:
 
 def _build_mechanism_map(rows: list[dict]) -> dict[str, list[dict]]:
     mapping: dict[str, list[dict]] = {}
-    for row in rows:
+    for idx, row in enumerate(rows):
         qid = row.get("question_id")
-        if not qid:
-            continue
-        mapping[qid] = row.get("mechanisms", [])
+        if qid is None or (isinstance(qid, str) and not qid.strip()):
+            raise ValueError(f"missing question_id in mechanisms row {idx}")
+        mechanisms = row.get("mechanisms")
+        if mechanisms is None:
+            raise ValueError(f"missing mechanisms for question_id={qid}")
+        if not isinstance(mechanisms, list):
+            raise ValueError(f"invalid mechanisms for question_id={qid}")
+        for mechanism in mechanisms:
+            mechanism_id = mechanism.get("id") if isinstance(mechanism, dict) else None
+            if mechanism_id is None or (
+                isinstance(mechanism_id, str) and not mechanism_id.strip()
+            ):
+                raise ValueError(f"missing mechanism id for question_id={qid}")
+        mapping[qid] = mechanisms
     return mapping
 
 

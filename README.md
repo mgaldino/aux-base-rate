@@ -12,7 +12,7 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-Python version: requires >=3.11 (tested with 3.13.3). Use `python3` from a 3.11+ install.
+Python version: requires >=3.11 (tested with 3.13.3). This repo uses a local `.venv` with Python 3.13.3; prefer `.venv/bin/python` (or `python3` after activation). Do not assume `python` exists outside the venv.
 
 Environment:
 ```bash
@@ -28,12 +28,18 @@ export ANTHROPIC_API_KEY=...
 ## Run
 
 ```bash
-python -m base_rate_harness.runner \
+python3 -m base_rate_harness.runner \
   --input questions.sample.jsonl \
   --output results.jsonl \
   --model claude-3-haiku-20240307 \
   --prompts v0,v0_2 \
   --temperature 0.2
+```
+
+## Tests
+
+```bash
+.venv/bin/python -m pytest -q
 ```
 
 ## Prompts
@@ -298,7 +304,7 @@ Mapped JSONL line:
 CLI:
 
 ```bash
-python -m base_rate_harness.runner \
+python3 -m base_rate_harness.runner \
   --input questions.br_q005.jsonl \
   --output results.br_q005.jsonl \
   --model claude-3-haiku-20240307 \

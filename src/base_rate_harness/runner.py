@@ -69,6 +69,7 @@ def run(
     client: Optional[AnthropicMessagesClient] = None,
 ) -> dict:
     questions = read_jsonl(input_path)
+    _validate_questions(questions)
     records = list(build_records(questions, prompt_ids, model, temperature, client=client))
     n_written = write_jsonl(output_path, records, append=append)
     n_parse_failures = sum(1 for r in records if r.get("parse_error"))
@@ -81,6 +82,16 @@ def run(
         "n_call_failures": n_call_failures,
     }
     return summary
+
+
+def _validate_questions(questions: list[dict]) -> None:
+    for idx, question in enumerate(questions):
+        question_id = question.get("question_id")
+        if question_id is None or (isinstance(question_id, str) and not question_id.strip()):
+            raise ValueError(f"missing question_id at index {idx}")
+        question_text = question.get("question")
+        if question_text is None or (isinstance(question_text, str) and not question_text.strip()):
+            raise ValueError(f"missing question at index {idx}")
 
 
 def main() -> None:

@@ -53,6 +53,28 @@ def test_runner_raises_on_missing_mechanisms(tmp_path: Path) -> None:
         )
 
 
+def test_runner_raises_on_mechanism_missing_id(tmp_path: Path) -> None:
+    priors_path = tmp_path / "priors.jsonl"
+    mechanisms_path = tmp_path / "mechanisms.jsonl"
+    evidence_path = tmp_path / "evidence.jsonl"
+    output_path = tmp_path / "output.jsonl"
+
+    _write_jsonl(priors_path, [{"question_id": "q1", "prompt_id": "v0", "base_rate": 30}])
+    _write_jsonl(
+        mechanisms_path,
+        [{"question_id": "q1", "mechanisms": [{"label": "missing id"}]}],
+    )
+    _write_jsonl(evidence_path, [])
+
+    with pytest.raises(ValueError, match="missing mechanism id"):
+        runner.run(
+            priors_path=str(priors_path),
+            mechanisms_path=str(mechanisms_path),
+            evidence_path=str(evidence_path),
+            output_path=str(output_path),
+        )
+
+
 def test_runner_keeps_prior_without_evidence(tmp_path: Path) -> None:
     priors_path = tmp_path / "priors.jsonl"
     mechanisms_path = tmp_path / "mechanisms.jsonl"

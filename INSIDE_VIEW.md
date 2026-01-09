@@ -1,4 +1,4 @@
-# Inside View Plan (Draft)
+# Inside View Plan
 
 Plano de funcionalidade inside-view com foco em modularidade, testes e
 execucao reprodutivel via arquivos JSONL.
@@ -21,11 +21,14 @@ execucao reprodutivel via arquivos JSONL.
 ## Guardrails
 - Cada evidencia mapeia para exatamente um mecanismo.
 - Evidencias no mesmo mecanismo sao correlacionadas.
-- Deduplicar evidencias quase identicas; reduzir peso por baixa novidade.
+- Controle de correlacao via estrategia configuravel (top-k, desconto por fonte, cap).
 - Sem narrativa especifica sem mecanismo + sinal observavel.
 - Evidencias com `evidence_db` negativo devem ser descartadas e logadas.
+- Evidencias com `evidence_db` ausente ou invalido devem ser descartadas e logadas.
 - Direcao invalida deve ser descartada e logada.
+- Direcao ausente deve ser descartada e logada.
 - `evidence_db` deve estar no conjunto discreto {10, 20, 30, 40}; fora disso, descartar e logar.
+- `novelty_score` invalido deve ser descartado e logado.
 
 ## Data Schemas (JSONL)
 
@@ -88,6 +91,10 @@ Discard reasons (enum, MVP):
 - `invalid_direction`
 - `missing_direction`
 - `missing_mechanism`
+- `missing_db`
+- `invalid_db`
+- `invalid_db_level`
+- `invalid_novelty`
 
 Adjustment log (optional, non-discard; separate JSONL file):
 - `novelty_clamped`
@@ -133,10 +140,13 @@ For each mechanism `m`:
 2) Normalize and validate evidence:
    - `novelty_score` default = 1.0 se ausente
    - clamp `novelty_score` para [0, 1] (logar se ajustado)
+   - descartar `novelty_score` invalido (logar)
    - descartar `evidence_db` < 10 (logar)
    - descartar `evidence_db` negativo (logar)
+   - descartar `evidence_db` ausente ou invalido (logar)
    - descartar `evidence_db` fora de {10, 20, 30, 40} (logar)
    - descartar direcao invalida (logar)
+   - descartar direcao ausente (logar)
 3) Compute effective dB using correlation control (MVP):
    - Opcoes principais a testar:
      a) Top-k por mecanismo (pelo maior `evidence_db * novelty_score`; k=3)
