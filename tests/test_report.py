@@ -24,6 +24,7 @@ def test_report_includes_brier_scores_with_outcomes(tmp_path: Path) -> None:
                 "base_rate": 70.0,
                 "parse_error": None,
                 "call_error": None,
+                "meta": {"model": "test-model"},
             }
         ],
     )
@@ -56,6 +57,7 @@ def test_report_includes_brier_scores_with_outcomes(tmp_path: Path) -> None:
     assert "Brier" in html
     assert "0.0900" in html
     assert "0.0400" in html
+    assert "test-model" in html
 
 
 def test_report_handles_missing_outcomes(tmp_path: Path) -> None:

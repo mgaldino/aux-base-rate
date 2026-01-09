@@ -90,6 +90,13 @@ def _collect_outside(rows: Iterable[dict]) -> dict:
     parse_failures = sum(1 for r in rows_list if r.get("parse_error"))
     call_failures = sum(1 for r in rows_list if r.get("call_error"))
     prompt_ids = sorted({r.get("prompt_id") for r in rows_list if r.get("prompt_id")})
+    models = sorted(
+        {
+            (r.get("meta") or {}).get("model")
+            for r in rows_list
+            if (r.get("meta") or {}).get("model")
+        }
+    )
     return {
         "count": len(rows_list),
         "base_rate_mean": _mean(base_rates),
@@ -98,6 +105,7 @@ def _collect_outside(rows: Iterable[dict]) -> dict:
         "parse_failures": parse_failures,
         "call_failures": call_failures,
         "prompt_ids": prompt_ids,
+        "models": models,
     }
 
 
@@ -111,6 +119,13 @@ def _collect_inside(rows: Iterable[dict]) -> dict:
         if r.get("posterior") is not None and r.get("prior") is not None
     ]
     prompt_ids = sorted({r.get("prompt_id") for r in rows_list if r.get("prompt_id")})
+    models = sorted(
+        {
+            (r.get("meta") or {}).get("model")
+            for r in rows_list
+            if (r.get("meta") or {}).get("model")
+        }
+    )
     return {
         "count": len(rows_list),
         "prior_mean": _mean(priors),
@@ -121,6 +136,7 @@ def _collect_inside(rows: Iterable[dict]) -> dict:
         "posterior_min": min(posteriors) if posteriors else None,
         "posterior_max": max(posteriors) if posteriors else None,
         "prompt_ids": prompt_ids,
+        "models": models,
     }
 
 
@@ -237,6 +253,9 @@ def render_html(report: Report) -> str:
         "<tr><td>Base rate max</td><td>{}</td></tr>".format(
             fmt_percent(outside["base_rate_max"])
         ),
+        "<tr><td>Models</td><td>{}</td></tr>".format(
+            html.escape(", ".join(outside["models"])) if outside["models"] else "-"
+        ),
         "<tr><td>Parse failures</td><td>{}</td></tr>".format(outside["parse_failures"]),
         "<tr><td>Call failures</td><td>{}</td></tr>".format(outside["call_failures"]),
         "</table>",
@@ -253,6 +272,9 @@ def render_html(report: Report) -> str:
         "<tr><td>Prior max</td><td>{}</td></tr>".format(fmt(inside["prior_max"])),
         "<tr><td>Posterior min</td><td>{}</td></tr>".format(fmt(inside["posterior_min"])),
         "<tr><td>Posterior max</td><td>{}</td></tr>".format(fmt(inside["posterior_max"])),
+        "<tr><td>Models</td><td>{}</td></tr>".format(
+            html.escape(", ".join(inside["models"])) if inside["models"] else "-"
+        ),
         "</table>",
         "</div>",
     ]
