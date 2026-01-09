@@ -197,6 +197,24 @@ The model must output:
 
 Parsing only checks the first line for the base rate.
 
+## Inside-view (MVP)
+Inside-view is a separate pipeline that reads:
+
+- prior results JSONL (outside-view output)
+- mechanisms JSONL (per question)
+- evidence JSONL (per item)
+
+It writes:
+
+- posterior JSONL (one record per `question_id × prompt_id`)
+- optional discard log JSONL
+- optional adjustment log JSONL
+
+Notes:
+- `novelty_score` defaults to `1.0` when missing.
+- `novelty_score` is clamped to `[0, 1]` and logged to the adjustment log when changed.
+- Evidence with `evidence_db < 10`, negative `evidence_db`, or invalid direction is discarded and logged.
+
 ## Example (BR_Q005)
 Input JSON (source):
 

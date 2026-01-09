@@ -22,6 +22,7 @@ dev = [
 
 [project.scripts]
 base-rate-harness = "base_rate_harness.runner:main"
+inside-view-harness = "inside_view_harness.runner:main"
 
 [tool.ruff]
 line-length = 100
