@@ -2,6 +2,8 @@
 
 MVP prompt-iteration harness for outside-view base rates on binary political forecast questions.
 
+MVP status: complete (outside-view harness, inside-view harness, combined runner).
+
 ## Install
 
 ```bash
