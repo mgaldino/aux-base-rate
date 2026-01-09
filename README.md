@@ -28,7 +28,7 @@ python -m base_rate_harness.runner \
 ```
 
 ## Prompts
-All variants share the same system prompt:
+All variants share the same system prompt (exact text):
 
 ```
 You are estimating an OUTSIDE-VIEW base rate only; later I will combine this base rate with case-specific signals. Your job is to provide the outside-view prior.
@@ -41,13 +41,112 @@ BASE_RATE: <0–100>%
 RATIONALE: <short text including, if needed, a plausible range and why>
 ```
 
-Prompt variants:
+Prompt variants (exact user prompt templates):
 
-- `v0`: base prompt only.
-- `v0_1`: outside-view only; do not mention polls/opponents/polarization/“how close the race is”.
-- `v0_2`: if precise, list concrete cases; otherwise use a wide interval, average it, and explain the range.
-- `v0_3`: structured rationale (TYPE, DIMENSIONS, ANALOGS, PRIOR) with strict formatting rules.
-- `v0_4`: objective Bayesian prior with historical frequency, no case-specific signals.
+`v0`:
+
+```
+Question ID: {question_id}
+Question: {question}
+Reference date: {reference_date}
+Region: {region}
+Notes: {notes}
+
+Provide the base rate as instructed.
+```
+
+`v0_1`:
+
+```
+Question ID: {question_id}
+Question: {question}
+Reference date: {reference_date}
+Region: {region}
+Notes: {notes}
+
+Provide the base rate as instructed.
+Use ONLY outside-view base rates. Do not mention polls, opponents, polarization, or “how close the race is”.
+```
+
+`v0_2`:
+
+```
+Question ID: {question_id}
+Question: {question}
+Reference date: {reference_date}
+Region: {region}
+Notes: {notes}
+
+Provide the base rate as instructed.
+If you give a precise percentage (not a wide range), you must list the specific historical cases you are counting. Otherwise, provide a wide interval (e.g., 30–70%), then average it to a single number and say why the range is wide.
+```
+
+`v0_3`:
+
+```
+Question ID: {question_id}
+Question: {question}
+Reference date: {reference_date}
+Region: {region}
+Notes: {notes}
+
+Provide the base rate as instructed.
+IMPORTANT FORMAT RULE:
+- The first line must be exactly "BASE_RATE: <number>%".
+- The second line must start with "RATIONALE:".
+- Do not write any text before BASE_RATE.
+
+Inside the RATIONALE only, do this:
+
+1) TYPE (create a new event type label)
+Create a short label (3–10 words) that generalizes the event into a reusable category.
+It should describe WHAT happens and to WHOM/WHAT, not the specific names.
+Examples of TYPE labels (examples only; create your own if needed):
+- "incumbent reelected in national election"
+- "electoral court declares candidate ineligible"
+- "supreme court strikes down policy as unconstitutional"
+- "legislation enacted by deadline"
+- "targeted political violence against public figure"
+- "public opinion support exceeds threshold by deadline"
+
+2) DIMENSIONS (define what makes events 'similar')
+Define the TYPE using 3–5 dimensions. Use concrete, observable dimensions like:
+- actor/target role (e.g., incumbent president, candidate, court, agency, public figure)
+- action/outcome (e.g., reelected, declared ineligible, ruled unconstitutional, law enacted, violence occurs)
+- institution/process (e.g., election, court ruling, legislation, administrative decision, survey release)
+- jurisdiction/region level (e.g., Brazil national, state, municipality)
+- time structure (e.g., by a fixed deadline; open-ended; within X months)
+Write dimensions as key:value pairs.
+
+3) ANALOGS (optional, but disciplined)
+List 1–3 comparable historical examples ONLY if you are confident they are real and broadly comparable.
+If you are not confident, write: "ANALOGS: none (not confident)".
+Do not invent examples.
+
+4) PRIOR (base rate)
+Give the outside-view base rate. If you cannot support a precise point estimate without inventing statistics, include a broad range in the rationale as:
+RANGE: a-b%
+and set BASE_RATE to the midpoint of that range.
+
+Reminder:
+- Do not use polls, recent news, named opponents, or any case-specific signals.
+- BASE_RATE must be a single number, not a range.
+```
+
+`v0_4`:
+
+```
+Question ID: {question_id}
+Question: {question}
+Reference date: {reference_date}
+Region: {region}
+Notes: {notes}
+
+Provide the base rate as instructed.
+Be an objective Bayesian: provide an outside-view prior probability for this question, based on the historical frequency of similar events before the reference date.
+Do not use case-specific signals (polls, named opponents, recent news, “current climate”).
+Do not invent numeric frequencies (e.g., “3 out of 6”) unless you also name the specific cases you are counting;
+```
 
 ## Input schema (JSONL)
 Each line is a JSON object:
