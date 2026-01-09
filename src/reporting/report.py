@@ -185,6 +185,16 @@ def build_report(
 
     brier = None
     details: list[dict] = []
+    outside_by_question: dict[str, dict] = {}
+    for row in outside_rows:
+        qid = row.get("question_id")
+        if qid:
+            outside_by_question.setdefault(str(qid), row)
+    inside_by_question: dict[str, dict] = {}
+    for row in inside_rows:
+        qid = row.get("question_id")
+        if qid:
+            inside_by_question.setdefault(str(qid), row)
     if questions_path:
         outcomes = _load_outcomes(questions_path)
         if outcomes:
@@ -198,10 +208,14 @@ def build_report(
         for qid, question in questions.items():
             mech_list = mechanisms.get(qid, [])
             ev_list = evidence.get(qid, [])
+            outside_row = outside_by_question.get(qid, {})
+            inside_row = inside_by_question.get(qid, {})
             details.append(
                 {
                     "question_id": qid,
                     "question": question.get("question"),
+                    "base_rate": outside_row.get("base_rate"),
+                    "posterior": inside_row.get("posterior"),
                     "mechanisms": mech_list,
                     "evidence": ev_list,
                 }
@@ -311,6 +325,13 @@ def render_html(report: Report) -> str:
             question_text = item.get("question") or "-"
             qid = item.get("question_id") or "-"
             parts.append("<h3>{}</h3>".format(html.escape(f"{qid}: {question_text}")))
+            base_rate = item.get("base_rate")
+            posterior = item.get("posterior")
+            parts.append(
+                "<div><strong>Base rate:</strong> {} | <strong>Posterior:</strong> {}</div>".format(
+                    fmt_percent(base_rate), fmt(posterior)
+                )
+            )
             mechanisms = item.get("mechanisms", [])
             evidence = item.get("evidence", [])
             parts.append("<strong>Mechanisms</strong>")

@@ -149,5 +149,7 @@ def test_report_includes_question_details(tmp_path: Path) -> None:
     )
     html = render_html(report)
     assert "Will X happen?" in html
+    assert "Base rate" in html
+    assert "Posterior" in html
     assert "mechanism one" in html
     assert "Evidence summary" in html
