@@ -65,7 +65,13 @@ def _render_mechanisms(mechanisms: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def _render_user_prompt(question: dict, mechanisms: list[dict], articles: list[dict], max_articles: int) -> tuple[str, dict[str, dict]]:
+def _render_user_prompt(
+    question: dict,
+    mechanisms: list[dict],
+    articles: list[dict],
+    hypothesis: str,
+    max_articles: int,
+) -> tuple[str, dict[str, dict]]:
     article_block, id_map = _render_articles(articles, max_articles)
     return (
         USER_PROMPT.format(
@@ -76,6 +82,7 @@ def _render_user_prompt(question: dict, mechanisms: list[dict], articles: list[d
             notes=_normalize_optional(question.get("notes")),
             mechanisms=_render_mechanisms(mechanisms),
             articles=article_block or "N/A",
+            hypothesis=hypothesis,
         ),
         id_map,
     )
@@ -89,14 +96,22 @@ def run(
     temperature: float = 0.2,
     gdelt_timespan: str = "30d",
     gdelt_max_records: int = 50,
-    gdelt_extra_query: Optional[str] = "politics OR election OR court OR congress OR government",
+    gdelt_extra_query_yes: Optional[str] = "politics OR election OR court OR congress OR government",
+    gdelt_extra_query_no: Optional[str] = "rejeita OR derrota OR indefere OR delay OR atraso OR rejeição OR dismisses",
     gdelt_window_days: Optional[int] = 365,
     max_articles: int = 20,
     client: Optional[EvidenceLLMClient] = None,
 ) -> dict:
     questions = read_questions(questions_path)
     mechanism_rows = read_jsonl(mechanisms_path)
-    mechanism_map = {row.get("question_id"): row.get("mechanisms", []) for row in mechanism_rows}
+    mechanism_map = {
+        row.get("question_id"): {
+            "yes": row.get("mechanisms_yes", []),
+            "no": row.get("mechanisms_no", []),
+            "legacy": row.get("mechanisms", []),
+        }
+        for row in mechanism_rows
+    }
 
     client = client or EvidenceLLMClient()
     cfg = EvidenceLLMConfig(model=model, temperature=temperature)
@@ -107,59 +122,74 @@ def run(
 
     for question in questions:
         qid = question.get("question_id")
-        mechanisms = mechanism_map.get(qid, [])
-        question_text = question.get("question") or ""
-        region = question.get("region") or ""
-        query = build_query(question_text, region, gdelt_extra_query)
-        ref_date = _parse_reference_date(question.get("reference_date"))
-        if ref_date and gdelt_window_days:
-            start = ref_date - timedelta(days=gdelt_window_days)
-            url = build_gdelt_url(
-                query,
-                max_records=gdelt_max_records,
-                start_datetime=_gdelt_datetime(start, end_of_day=False),
-                end_datetime=_gdelt_datetime(ref_date, end_of_day=True),
-            )
-        else:
-            url = build_gdelt_url(query, max_records=gdelt_max_records, timespan=gdelt_timespan)
-        articles = fetch_gdelt_articles(url)
+        mechanisms_entry = mechanism_map.get(qid, {})
+        mechanisms_yes = mechanisms_entry.get("yes") or mechanisms_entry.get("legacy", [])
+        mechanisms_no = mechanisms_entry.get("no") or []
 
-        user_prompt, article_map = _render_user_prompt(question, mechanisms, articles, max_articles)
-        text, call_error = client.generate(SYSTEM_PROMPT, user_prompt, cfg)
-        assignments = None
-        parse_error = None
-        if text is not None:
-            assignments, parse_error = parse_assignments_output(text)
-        if call_error:
-            call_failures += 1
-        if parse_error:
-            parse_failures += 1
-
-        if assignments:
-            for assignment in assignments:
-                article_id = assignment["article_id"]
-                article = article_map.get(article_id)
-                if not article:
-                    continue
-                records.append(
-                    {
-                        "evidence_id": article_id,
-                        "question_id": qid,
-                        "mechanism_id": assignment["mechanism_id"],
-                        "direction": assignment["direction"],
-                        "evidence_db": assignment["evidence_db"],
-                        "novelty_score": assignment.get("novelty_score", 1.0),
-                        "source": "gdelt",
-                        "timestamp": article.get("seendate"),
-                        "url": article.get("url"),
-                        "summary": article.get("title"),
-                        "notes": assignment.get("notes"),
-                        "meta": {
-                            "gdelt_query": query,
-                            "run_ts": _utc_timestamp(),
-                        },
-                    }
+        for hypothesis, mechanisms, extra_query in [
+            ("YES", mechanisms_yes, gdelt_extra_query_yes),
+            ("NO", mechanisms_no, gdelt_extra_query_no),
+        ]:
+            if not mechanisms:
+                continue
+            question_text = question.get("question") or ""
+            region = question.get("region") or ""
+            query = build_query(question_text, region, extra_query)
+            ref_date = _parse_reference_date(question.get("reference_date"))
+            if ref_date and gdelt_window_days:
+                start = ref_date - timedelta(days=gdelt_window_days)
+                url = build_gdelt_url(
+                    query,
+                    max_records=gdelt_max_records,
+                    start_datetime=_gdelt_datetime(start, end_of_day=False),
+                    end_datetime=_gdelt_datetime(ref_date, end_of_day=True),
                 )
+            else:
+                url = build_gdelt_url(
+                    query, max_records=gdelt_max_records, timespan=gdelt_timespan
+                )
+            articles = fetch_gdelt_articles(url)
+
+            user_prompt, article_map = _render_user_prompt(
+                question, mechanisms, articles, hypothesis, max_articles
+            )
+            text, call_error = client.generate(SYSTEM_PROMPT, user_prompt, cfg)
+            assignments = None
+            parse_error = None
+            if text is not None:
+                assignments, parse_error = parse_assignments_output(text)
+            if call_error:
+                call_failures += 1
+            if parse_error:
+                parse_failures += 1
+
+            if assignments:
+                for assignment in assignments:
+                    article_id = assignment["article_id"]
+                    article = article_map.get(article_id)
+                    if not article:
+                        continue
+                    evidence_id = f"{article_id}_{hypothesis.lower()}"
+                    records.append(
+                        {
+                            "evidence_id": evidence_id,
+                            "question_id": qid,
+                            "mechanism_id": assignment["mechanism_id"],
+                            "hypothesis": assignment["hypothesis"],
+                            "direction": assignment["direction"],
+                            "evidence_db": assignment["evidence_db"],
+                            "novelty_score": assignment.get("novelty_score", 1.0),
+                            "source": "gdelt",
+                            "timestamp": article.get("seendate"),
+                            "url": article.get("url"),
+                            "summary": article.get("title"),
+                            "notes": assignment.get("notes"),
+                            "meta": {
+                                "gdelt_query": query,
+                                "run_ts": _utc_timestamp(),
+                            },
+                        }
+                    )
 
     n_written = write_jsonl(output_path, records, append=False)
     return {
@@ -179,7 +209,14 @@ def main() -> None:
     parser.add_argument("--temperature", type=float, default=0.2)
     parser.add_argument("--gdelt-timespan", default="30d")
     parser.add_argument("--gdelt-max-records", type=int, default=50)
-    parser.add_argument("--gdelt-extra-query", default="politics OR election OR court OR congress OR government")
+    parser.add_argument(
+        "--gdelt-extra-query-yes",
+        default="politics OR election OR court OR congress OR government",
+    )
+    parser.add_argument(
+        "--gdelt-extra-query-no",
+        default="rejeita OR derrota OR indefere OR delay OR atraso OR rejeição OR dismisses",
+    )
     parser.add_argument("--gdelt-window-days", type=int, default=365)
     parser.add_argument("--max-articles", type=int, default=20)
     args = parser.parse_args()
@@ -192,7 +229,8 @@ def main() -> None:
         temperature=args.temperature,
         gdelt_timespan=args.gdelt_timespan,
         gdelt_max_records=args.gdelt_max_records,
-        gdelt_extra_query=args.gdelt_extra_query,
+        gdelt_extra_query_yes=args.gdelt_extra_query_yes,
+        gdelt_extra_query_no=args.gdelt_extra_query_no,
         gdelt_window_days=args.gdelt_window_days,
         max_articles=args.max_articles,
     )

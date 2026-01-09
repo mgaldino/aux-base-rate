@@ -10,7 +10,10 @@ Notes: {notes}
 
 Return JSON with:
 {{
-  "mechanisms": [
+  "mechanisms_yes": [
+    {{"id": "m1_short_slug", "label": "short mechanism label", "prior_weight": 0.33}}
+  ],
+  "mechanisms_no": [
     {{"id": "m1_short_slug", "label": "short mechanism label", "prior_weight": 0.33}}
   ]
 }}
@@ -20,4 +23,6 @@ Rules:
 - Each id must be unique and stable, use lowercase snake_case.
 - Labels should describe a causal pathway (not evidence).
 - prior_weight is optional (0-1) and does not need to sum to 1.
+- For YES mechanisms: inhabit the world where the outcome is true and list causal paths that make it happen.
+- For NO mechanisms: inhabit the world where the outcome is false and list causal paths that prevent it.
 """

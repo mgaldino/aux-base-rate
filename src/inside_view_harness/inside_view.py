@@ -48,6 +48,35 @@ def apply_inside_view(
     return posterior, by_mechanism
 
 
+def compute_effective_db(
+    mechanisms: Iterable[dict],
+    evidence_items: Iterable[NormalizedEvidence],
+    config: InsideViewConfig,
+) -> tuple[float, list[dict]]:
+    evidence_by_mechanism: dict[str, list[NormalizedEvidence]] = {}
+    for item in evidence_items:
+        evidence_by_mechanism.setdefault(item.mechanism_id or "", []).append(item)
+
+    by_mechanism: list[dict] = []
+    total_effective_db = 0.0
+
+    for mechanism in mechanisms:
+        mechanism_id = mechanism.get("id")
+        if not mechanism_id:
+            continue
+        items = evidence_by_mechanism.get(mechanism_id, [])
+        if not items:
+            continue
+        raw_db = _sum_db(items)
+        effective_db = _apply_strategy(items, raw_db, config)
+        by_mechanism.append(
+            {"mechanism_id": mechanism_id, "raw_db": raw_db, "effective_db": effective_db}
+        )
+        total_effective_db += effective_db
+
+    return total_effective_db, by_mechanism
+
+
 def _apply_strategy(
     items: list[NormalizedEvidence], raw_db: float, config: InsideViewConfig
 ) -> float:

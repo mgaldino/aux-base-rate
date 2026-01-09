@@ -7,6 +7,7 @@
     "evidence_id": { "type": "string" },
     "question_id": { "type": "string" },
     "mechanism_id": { "type": "string" },
+    "hypothesis": { "type": "string", "enum": ["YES", "NO"] },
     "direction": { "type": "string" },
     "evidence_db": { "type": "number", "enum": [10, 20, 30, 40] },
     "novelty_score": { "type": "number" },

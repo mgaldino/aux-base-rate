@@ -3,7 +3,7 @@ import math
 from datetime import datetime, timezone
 from typing import Optional
 
-from inside_view_harness.inside_view import InsideViewConfig, apply_inside_view
+from inside_view_harness.inside_view import InsideViewConfig, apply_inside_view, compute_effective_db
 from inside_view_harness.io import read_jsonl, write_jsonl
 from inside_view_harness.parse import normalize_evidence
 from schema_validation import validate_rows
@@ -35,6 +35,21 @@ def _normalize_question_id_optional(value: object) -> Optional[str]:
     return text.casefold()
 
 
+def _discard_reason(evidence: dict, reason: str) -> dict:
+    return {
+        "evidence_id": evidence.get("evidence_id"),
+        "question_id": evidence.get("question_id"),
+        "mechanism_id": evidence.get("mechanism_id"),
+        "reason": reason,
+        "raw_direction": evidence.get("direction"),
+        "evidence_db": evidence.get("evidence_db"),
+        "novelty_score": evidence.get("novelty_score"),
+        "source": evidence.get("source"),
+        "timestamp": evidence.get("timestamp"),
+        "notes": evidence.get("notes"),
+    }
+
+
 def _build_mechanism_map(rows: list[dict]) -> dict[str, list[dict]]:
     mapping: dict[str, list[dict]] = {}
     seen: dict[str, str] = {}
@@ -61,6 +76,35 @@ def _build_mechanism_map(rows: list[dict]) -> dict[str, list[dict]]:
     return mapping
 
 
+def _build_mechanism_map_bidirectional(
+    rows: list[dict],
+) -> tuple[dict[str, list[dict]], dict[str, list[dict]]]:
+    mapping_yes: dict[str, list[dict]] = {}
+    mapping_no: dict[str, list[dict]] = {}
+    seen: dict[str, str] = {}
+    for idx, row in enumerate(rows):
+        qid = row.get("question_id")
+        normalized_qid = _normalize_question_id(qid, f"mechanisms row {idx}")
+        mechanisms_yes = row.get("mechanisms_yes", [])
+        mechanisms_no = row.get("mechanisms_no", [])
+        if not isinstance(mechanisms_yes, list) or not isinstance(mechanisms_no, list):
+            raise ValueError(f"invalid mechanisms for question_id={qid}")
+        for mechanism in mechanisms_yes + mechanisms_no:
+            mechanism_id = mechanism.get("id") if isinstance(mechanism, dict) else None
+            if mechanism_id is None or (
+                isinstance(mechanism_id, str) and not mechanism_id.strip()
+            ):
+                raise ValueError(f"missing mechanism id for question_id={qid}")
+        if normalized_qid in seen and seen[normalized_qid] != qid:
+            raise ValueError(
+                "question_id collision: {a} vs {b}".format(a=seen[normalized_qid], b=qid)
+            )
+        seen[normalized_qid] = str(qid)
+        mapping_yes[normalized_qid] = mechanisms_yes
+        mapping_no[normalized_qid] = mechanisms_no
+    return mapping_yes, mapping_no
+
+
 def run(
     priors_path: str,
     mechanisms_path: str,
@@ -84,27 +128,72 @@ def run(
         validate_rows(mechanism_rows, "mechanisms.schema.json", schemas_dir=schemas_dir)
         validate_rows(evidence_rows, "evidence.schema.json", schemas_dir=schemas_dir)
 
-    mechanism_map = _build_mechanism_map(mechanism_rows)
+    bidirectional = any(
+        ("mechanisms_yes" in row or "mechanisms_no" in row) for row in mechanism_rows
+    )
+    mechanism_map: dict[str, list[dict]] = {}
+    mechanism_map_yes: dict[str, list[dict]] = {}
+    mechanism_map_no: dict[str, list[dict]] = {}
+    if bidirectional:
+        mechanism_map_yes, mechanism_map_no = _build_mechanism_map_bidirectional(mechanism_rows)
+    else:
+        mechanism_map = _build_mechanism_map(mechanism_rows)
     mechanism_ids_map = {
         qid: {m.get("id") for m in mechanisms if m.get("id")}
         for qid, mechanisms in mechanism_map.items()
+    }
+    mechanism_ids_map_yes = {
+        qid: {m.get("id") for m in mechanisms if m.get("id")}
+        for qid, mechanisms in mechanism_map_yes.items()
+    }
+    mechanism_ids_map_no = {
+        qid: {m.get("id") for m in mechanisms if m.get("id")}
+        for qid, mechanisms in mechanism_map_no.items()
     }
 
     discards: list[dict] = []
     adjustments: list[dict] = []
     evidence_by_question: dict[str, list] = {}
+    evidence_by_question_yes: dict[str, list] = {}
+    evidence_by_question_no: dict[str, list] = {}
 
     for evidence in evidence_rows:
         qid = evidence.get("question_id")
         normalized_qid = _normalize_question_id_optional(qid)
-        mechanism_ids = mechanism_ids_map.get(normalized_qid, set())
-        normalized, discard, adjustment_rows = normalize_evidence(evidence, mechanism_ids)
+        if bidirectional:
+            raw_hypothesis = evidence.get("hypothesis")
+            if raw_hypothesis is None:
+                discards.append(_discard_reason(evidence, "missing_hypothesis"))
+                continue
+            hypothesis = str(raw_hypothesis).strip().upper()
+            if hypothesis not in {"YES", "NO"}:
+                discards.append(_discard_reason(evidence, "invalid_hypothesis"))
+                continue
+            mechanism_ids = (
+                mechanism_ids_map_yes.get(normalized_qid, set())
+                if hypothesis == "YES"
+                else mechanism_ids_map_no.get(normalized_qid, set())
+            )
+            evidence_copy = dict(evidence)
+            evidence_copy["hypothesis"] = hypothesis
+            normalized, discard, adjustment_rows = normalize_evidence(
+                evidence_copy, mechanism_ids, require_hypothesis=True
+            )
+        else:
+            mechanism_ids = mechanism_ids_map.get(normalized_qid, set())
+            normalized, discard, adjustment_rows = normalize_evidence(evidence, mechanism_ids)
         if discard:
             discards.append(discard)
         if adjustment_rows:
             adjustments.extend(adjustment_rows)
         if normalized:
-            evidence_by_question.setdefault(normalized_qid or "", []).append(normalized)
+            if bidirectional:
+                if normalized.hypothesis == "YES":
+                    evidence_by_question_yes.setdefault(normalized_qid or "", []).append(normalized)
+                elif normalized.hypothesis == "NO":
+                    evidence_by_question_no.setdefault(normalized_qid or "", []).append(normalized)
+            else:
+                evidence_by_question.setdefault(normalized_qid or "", []).append(normalized)
 
     cfg = InsideViewConfig(
         strategy=strategy,
@@ -139,22 +228,56 @@ def run(
                 f"base_rate_out_of_bounds for question_id={qid} prompt_id={prompt_id}"
             )
         prior = base_rate_value / 100.0
-        mechanisms = mechanism_map.get(normalized_qid)
-        if mechanisms is None:
-            raise ValueError(f"missing mechanisms for question_id={qid}")
-        evidence_items = evidence_by_question.get(normalized_qid, [])
-        posterior, by_mechanism = apply_inside_view(prior, mechanisms, evidence_items, cfg)
-        record = {
-            "question_id": qid,
-            "prompt_id": prompt_id,
-            "prior": prior,
-            "posterior": posterior,
-            "by_mechanism": by_mechanism,
-            "meta": {
-                "run_ts": resolved_run_ts,
-                "version": "inside_view_v1",
-            },
-        }
+        if bidirectional:
+            mechanisms_yes = mechanism_map_yes.get(normalized_qid)
+            mechanisms_no = mechanism_map_no.get(normalized_qid)
+            if mechanisms_yes is None or mechanisms_no is None:
+                raise ValueError(f"missing mechanisms for question_id={qid}")
+            evidence_yes = evidence_by_question_yes.get(normalized_qid, [])
+            evidence_no = evidence_by_question_no.get(normalized_qid, [])
+            total_yes, by_mechanism_yes = compute_effective_db(
+                mechanisms_yes, evidence_yes, cfg
+            )
+            total_no, by_mechanism_no = compute_effective_db(mechanisms_no, evidence_no, cfg)
+            prior_odds = prior / (1 - prior)
+            log10_odds_update = (total_yes - total_no) / 10.0
+            posterior_odds = prior_odds * (10 ** log10_odds_update)
+            posterior = posterior_odds / (1 + posterior_odds)
+            record = {
+                "question_id": qid,
+                "prompt_id": prompt_id,
+                "prior": prior,
+                "posterior": posterior,
+                "prior_odds": prior_odds,
+                "posterior_odds": posterior_odds,
+                "log10_odds_update": log10_odds_update,
+                "sum_db_yes": total_yes,
+                "sum_db_no": total_no,
+                "by_mechanism": by_mechanism_yes,
+                "by_mechanism_yes": by_mechanism_yes,
+                "by_mechanism_no": by_mechanism_no,
+                "meta": {
+                    "run_ts": resolved_run_ts,
+                    "version": "inside_view_v1",
+                },
+            }
+        else:
+            mechanisms = mechanism_map.get(normalized_qid)
+            if mechanisms is None:
+                raise ValueError(f"missing mechanisms for question_id={qid}")
+            evidence_items = evidence_by_question.get(normalized_qid, [])
+            posterior, by_mechanism = apply_inside_view(prior, mechanisms, evidence_items, cfg)
+            record = {
+                "question_id": qid,
+                "prompt_id": prompt_id,
+                "prior": prior,
+                "posterior": posterior,
+                "by_mechanism": by_mechanism,
+                "meta": {
+                    "run_ts": resolved_run_ts,
+                    "version": "inside_view_v1",
+                },
+            }
         records.append(record)
 
     if validate_schemas:

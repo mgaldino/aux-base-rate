@@ -29,6 +29,9 @@ def _valid_assignment(assignment: object) -> bool:
         return False
     if not assignment.get("mechanism_id"):
         return False
+    hypothesis = assignment.get("hypothesis")
+    if hypothesis not in {"YES", "NO"}:
+        return False
     direction = assignment.get("direction")
     if direction not in {"YES", "NO"}:
         return False

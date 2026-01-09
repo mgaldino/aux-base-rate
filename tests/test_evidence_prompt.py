@@ -10,5 +10,6 @@ def test_evidence_prompt_formatting() -> None:
         notes="notes",
         mechanisms="m1: mech",
         articles="a1: title",
+        hypothesis="YES",
     )
     assert "{10, 20, 30, 40}" in rendered

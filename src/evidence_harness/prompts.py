@@ -7,6 +7,8 @@ Reference date: {reference_date}
 Region: {region}
 Notes: {notes}
 
+Hypothesis: {hypothesis}
+
 Mechanisms:
 {mechanisms}
 
@@ -19,6 +21,7 @@ Return JSON with:
     {{
       "article_id": "a1",
       "mechanism_id": "m1_quality",
+      "hypothesis": "YES",
       "direction": "YES",
       "evidence_db": 20,
       "novelty_score": 0.8,
@@ -32,4 +35,5 @@ Rules:
 - direction must be YES or NO.
 - Each article_id must appear at most once.
 - Choose the single best mechanism for each article; leave an article unassigned by omitting it.
+- direction is relative to the stated hypothesis.
 """

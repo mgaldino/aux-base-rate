@@ -9,6 +9,7 @@ def test_parse_assignments_output_accepts_valid_json() -> None:
             {
                 "article_id": "a1",
                 "mechanism_id": "m1_quality",
+                "hypothesis": "YES",
                 "direction": "YES",
                 "evidence_db": 20,
                 "novelty_score": 0.8,
@@ -29,8 +30,26 @@ def test_parse_assignments_output_rejects_invalid_db() -> None:
             {
                 "article_id": "a1",
                 "mechanism_id": "m1_quality",
+                "hypothesis": "YES",
                 "direction": "YES",
                 "evidence_db": 15,
+            }
+        ]
+    }
+    text = json.dumps(payload)
+    assignments, error = parse_assignments_output(text)
+    assert assignments is None
+    assert error == "invalid_assignment"
+
+
+def test_parse_assignments_output_rejects_missing_hypothesis() -> None:
+    payload = {
+        "assignments": [
+            {
+                "article_id": "a1",
+                "mechanism_id": "m1_quality",
+                "direction": "YES",
+                "evidence_db": 20,
             }
         ]
     }

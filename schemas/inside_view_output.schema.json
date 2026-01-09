@@ -21,6 +21,37 @@
         "additionalProperties": true
       }
     },
+    "by_mechanism_yes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["mechanism_id", "raw_db", "effective_db"],
+        "properties": {
+          "mechanism_id": { "type": "string" },
+          "raw_db": { "type": "number" },
+          "effective_db": { "type": "number" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "by_mechanism_no": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["mechanism_id", "raw_db", "effective_db"],
+        "properties": {
+          "mechanism_id": { "type": "string" },
+          "raw_db": { "type": "number" },
+          "effective_db": { "type": "number" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "prior_odds": { "type": "number" },
+    "posterior_odds": { "type": "number" },
+    "log10_odds_update": { "type": "number" },
+    "sum_db_yes": { "type": "number" },
+    "sum_db_no": { "type": "number" },
     "meta": {
       "type": "object",
       "required": ["run_ts", "version"],

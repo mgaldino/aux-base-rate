@@ -27,6 +27,8 @@ execucao reprodutivel via arquivos JSONL.
 - Cada `question_id` em priors deve ter mecanismos correspondentes.
 - `question_id` e tratado de forma case-insensitive para matching; colisao entre ids
   que diferem apenas por caixa gera erro.
+- Evidencias devem indicar a hipotese alvo (`hypothesis`: YES/NO) quando mecanismos
+  sao separados por hipotese.
 - Evidencias com `evidence_db` negativo devem ser descartadas e logadas.
 - Evidencias com `evidence_db` ausente ou invalido devem ser descartadas e logadas.
 - Direcao invalida deve ser descartada e logada.
@@ -40,10 +42,12 @@ Question mechanisms (one line per question):
 ```json
 {
   "question_id": "BR_Q005",
-  "mechanisms": [
+  "mechanisms_yes": [
     {"id": "m1_tse_balance", "label": "equilibrio politico no TSE", "prior_weight": 0.35},
-    {"id": "m2_speed", "label": "capacidade do TSE de julgar rapido", "prior_weight": 0.25},
-    {"id": "m3_quality", "label": "qualidade da acusacao", "prior_weight": 0.40}
+    {"id": "m2_speed", "label": "capacidade do TSE de julgar rapido", "prior_weight": 0.25}
+  ],
+  "mechanisms_no": [
+    {"id": "m3_quality", "label": "fragilidade da acusacao", "prior_weight": 0.40}
   ]
 }
 ```
@@ -58,6 +62,7 @@ Evidence items (one line per item):
   "url": "https://...",
   "summary": "Noticia X coloca em duvida a reuniao com embaixadores",
   "mechanism_id": "m3_quality",
+  "hypothesis": "NO",
   "direction": "NO",
   "evidence_db": 10,
   "novelty_score": 0.8,
@@ -100,6 +105,8 @@ Discard reasons (enum, MVP):
 - `invalid_db`
 - `invalid_db_level`
 - `invalid_novelty`
+- `missing_hypothesis`
+- `invalid_hypothesis`
 
 Adjustment log (optional, non-discard; separate JSONL file):
 - `novelty_clamped`
@@ -126,9 +133,16 @@ Output record (one line per (question_id x prompt_id)):
   "prompt_id": "v0",
   "prior": 0.30,
   "posterior": 0.24,
+  "prior_odds": 0.4286,
+  "posterior_odds": 0.3158,
+  "log10_odds_update": -0.132,
+  "sum_db_yes": 5.0,
+  "sum_db_no": 8.0,
   "by_mechanism": [
     {"mechanism_id": "m3_quality", "raw_db": -8.0, "effective_db": -6.5}
   ],
+  "by_mechanism_yes": [],
+  "by_mechanism_no": [],
   "meta": {
     "run_ts": "2025-01-01T00:00:00Z",
     "version": "inside_view_v1"
@@ -173,7 +187,8 @@ For each mechanism `m`:
 
 Total update:
 ```
-logit(posterior) = logit(prior) + sum(effective_db_m) * ln(10) / 10
+log10(odds_post) = log10(odds_prior) + (sum_db_yes - sum_db_no) / 10
+posterior = odds_post / (1 + odds_post)
 ```
 
 Direction handling:

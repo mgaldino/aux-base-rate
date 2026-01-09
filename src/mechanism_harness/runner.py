@@ -50,17 +50,18 @@ def run(
         qid = question.get("question_id")
         user_prompt = _render_user_prompt(question)
         text, call_error = client.generate(SYSTEM_PROMPT, user_prompt, cfg)
-        mechanisms = None
+        mechanisms_payload = None
         parse_error = None
         if text is not None:
-            mechanisms, parse_error = parse_mechanisms_output(text)
+            mechanisms_payload, parse_error = parse_mechanisms_output(text)
         if call_error:
             call_failures += 1
         if parse_error:
             parse_failures += 1
         record = {
             "question_id": qid,
-            "mechanisms": mechanisms or [],
+            "mechanisms_yes": (mechanisms_payload or {}).get("mechanisms_yes", []),
+            "mechanisms_no": (mechanisms_payload or {}).get("mechanisms_no", []),
             "parse_error": parse_error,
             "call_error": call_error,
             "meta": {

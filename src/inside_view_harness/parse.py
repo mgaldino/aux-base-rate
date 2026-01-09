@@ -23,6 +23,7 @@ class NormalizedEvidence:
     evidence_id: Optional[str]
     question_id: Optional[str]
     mechanism_id: Optional[str]
+    hypothesis: Optional[str]
     direction: str
     evidence_db: float
     novelty_score: float
@@ -46,11 +47,23 @@ def normalize_direction(value: object) -> Tuple[Optional[str], Optional[str]]:
 
 
 def normalize_evidence(
-    evidence: dict, mechanism_ids: set[str]
+    evidence: dict, mechanism_ids: set[str], require_hypothesis: bool = False
 ) -> Tuple[Optional[NormalizedEvidence], Optional[dict], list[dict]]:
     mechanism_id = evidence.get("mechanism_id")
     if not mechanism_id or mechanism_id not in mechanism_ids:
         return None, _discard_record(evidence, "missing_mechanism"), []
+
+    hypothesis = evidence.get("hypothesis")
+    if require_hypothesis:
+        normalized_hypothesis, hypothesis_reason = _normalize_hypothesis(hypothesis)
+        if hypothesis_reason:
+            return None, _discard_record(evidence, hypothesis_reason), []
+        hypothesis = normalized_hypothesis
+    elif hypothesis is not None:
+        normalized_hypothesis, hypothesis_reason = _normalize_hypothesis(hypothesis)
+        if hypothesis_reason:
+            return None, _discard_record(evidence, hypothesis_reason), []
+        hypothesis = normalized_hypothesis
 
     direction, direction_reason = normalize_direction(evidence.get("direction"))
     if direction_reason:
@@ -79,6 +92,7 @@ def normalize_evidence(
         evidence_id=evidence.get("evidence_id"),
         question_id=evidence.get("question_id"),
         mechanism_id=mechanism_id,
+        hypothesis=hypothesis,
         direction=direction,
         evidence_db=evidence_db,
         novelty_score=novelty_score,
@@ -117,6 +131,15 @@ def _discard_record(evidence: dict, reason: str) -> dict:
         "timestamp": evidence.get("timestamp"),
         "notes": evidence.get("notes"),
     }
+
+
+def _normalize_hypothesis(value: object) -> Tuple[Optional[str], Optional[str]]:
+    if value is None:
+        return None, "missing_hypothesis"
+    text = str(value).strip().upper()
+    if text in {"YES", "NO"}:
+        return text, None
+    return None, "invalid_hypothesis"
 
 
 def _adjustment_record(

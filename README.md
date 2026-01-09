@@ -78,6 +78,8 @@ mechanism-harness \
   --temperature 0.2
 ```
 
+Mechanisms JSONL includes `mechanisms_yes` and `mechanisms_no` per question.
+
 ## Evidence (GDELT + LLM)
 
 Fetch articles from GDELT and map to mechanisms with the LLM:
@@ -90,7 +92,9 @@ evidence-harness \
   --model claude-3-haiku-20240307 \
   --gdelt-timespan 30d \
   --gdelt-window-days 365 \
-  --gdelt-max-records 50
+  --gdelt-max-records 50 \
+  --gdelt-extra-query-yes "politics OR election OR court OR congress OR government" \
+  --gdelt-extra-query-no "rejeita OR derrota OR indefere OR delay OR atraso OR rejeição OR dismisses"
 ```
 
 ## Prompts

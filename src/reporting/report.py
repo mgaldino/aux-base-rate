@@ -216,6 +216,8 @@ def build_report(
                     "question": question.get("question"),
                     "base_rate": outside_row.get("base_rate"),
                     "posterior": inside_row.get("posterior"),
+                    "prior_odds": inside_row.get("prior_odds"),
+                    "posterior_odds": inside_row.get("posterior_odds"),
                     "mechanisms": mech_list,
                     "evidence": ev_list,
                 }
@@ -327,9 +329,14 @@ def render_html(report: Report) -> str:
             parts.append("<h3>{}</h3>".format(html.escape(f"{qid}: {question_text}")))
             base_rate = item.get("base_rate")
             posterior = item.get("posterior")
+            prior_odds = item.get("prior_odds")
+            posterior_odds = item.get("posterior_odds")
             parts.append(
-                "<div><strong>Base rate:</strong> {} | <strong>Posterior:</strong> {}</div>".format(
-                    fmt_percent(base_rate), fmt(posterior)
+                "<div><strong>Base rate:</strong> {} | <strong>Posterior:</strong> {} | "
+                "<strong>Odds:</strong> {}</div>".format(
+                    fmt_percent(base_rate),
+                    fmt(posterior),
+                    fmt(posterior_odds) if posterior_odds is not None else "-",
                 )
             )
             mechanisms = item.get("mechanisms", [])
