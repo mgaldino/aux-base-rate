@@ -113,6 +113,39 @@ def test_normalize_evidence_discards_invalid_db_level() -> None:
     assert discard["reason"] == "invalid_db_level"
     assert adjustments == []
 
+
+def test_normalize_evidence_discards_unknown_mechanism() -> None:
+    evidence = {
+        "evidence_id": "ev_unknown_mech",
+        "question_id": "q1",
+        "mechanism_id": "m2",
+        "direction": "YES",
+        "evidence_db": 10,
+        "novelty_score": 1.0,
+        "source": "news",
+    }
+    normalized, discard, adjustments = parse.normalize_evidence(evidence, {"m1"})
+    assert normalized is None
+    assert discard is not None
+    assert discard["reason"] == "missing_mechanism"
+    assert adjustments == []
+
+
+def test_normalize_evidence_defaults_novelty_when_missing() -> None:
+    evidence = {
+        "evidence_id": "ev_missing_novelty",
+        "question_id": "q1",
+        "mechanism_id": "m1",
+        "direction": "YES",
+        "evidence_db": 10,
+        "source": "news",
+    }
+    normalized, discard, adjustments = parse.normalize_evidence(evidence, {"m1"})
+    assert discard is None
+    assert normalized is not None
+    assert normalized.novelty_score == 1.0
+    assert adjustments == []
+
 def test_normalize_evidence_clamps_novelty() -> None:
     evidence = {
         "evidence_id": "ev2",

@@ -60,3 +60,24 @@ def test_runner_rejects_missing_required_fields(tmp_path: Path) -> None:
             temperature=0.2,
             client=FakeClient(),
         )
+
+
+def test_runner_rejects_missing_question_text(tmp_path: Path) -> None:
+    questions = [
+        {"question_id": "q1", "question": None},
+    ]
+    input_path = tmp_path / "questions.jsonl"
+    with input_path.open("w", encoding="utf-8") as f:
+        for row in questions:
+            f.write(json.dumps(row) + "\n")
+
+    output_path = tmp_path / "results.jsonl"
+    with pytest.raises(ValueError, match="missing question"):
+        run(
+            input_path=str(input_path),
+            output_path=str(output_path),
+            model="test-model",
+            prompt_ids=["v0"],
+            temperature=0.2,
+            client=FakeClient(),
+        )
