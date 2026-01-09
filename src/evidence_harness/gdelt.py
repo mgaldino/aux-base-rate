@@ -34,8 +34,11 @@ def build_gdelt_url(
 
 
 def fetch_gdelt_articles(url: str, timeout_s: int = 20) -> list[dict]:
-    with urllib.request.urlopen(url, timeout=timeout_s) as response:
-        payload = response.read().decode("utf-8")
+    try:
+        with urllib.request.urlopen(url, timeout=timeout_s) as response:
+            payload = response.read().decode("utf-8")
+    except Exception:
+        return []
     return parse_gdelt_response(payload)
 
 
@@ -114,7 +117,7 @@ def build_query(question: str, region: Optional[str], extra_query: Optional[str]
 
 
 def _extract_keywords(text: str, max_tokens: int = 6) -> list[str]:
-    words = re.findall(r"[\\w\\-]{4,}", text.lower())
+    words = re.findall(r"[\w-]{4,}", text.lower())
     tokens: list[str] = []
     for word in words:
         if word in _STOPWORDS:
