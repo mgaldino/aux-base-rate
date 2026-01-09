@@ -31,7 +31,7 @@ export ANTHROPIC_API_KEY=...
 python -m base_rate_harness.runner \
   --input questions.sample.jsonl \
   --output results.jsonl \
-  --model claude-3-5-sonnet-20240620 \
+  --model claude-3-haiku-20240307 \
   --prompts v0,v0_2 \
   --temperature 0.2
 ```
@@ -275,7 +275,7 @@ combined-harness \
   --evidence evidence.jsonl \
   --priors-output results.priors.jsonl \
   --output results.posterior.jsonl \
-  --model claude-3-5-sonnet-20240620 \
+  --model claude-3-haiku-20240307 \
   --prompts v0 \
   --temperature 0.2 \
   --discard-log discarded.jsonl \
