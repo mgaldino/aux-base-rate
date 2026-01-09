@@ -53,5 +53,6 @@ def test_build_query_uses_keywords_and_region() -> None:
         "Brasil",
         "politics",
     )
+    assert "(" in q and "OR" in q
     assert "AND Brasil" in q
     assert "AND (politics)" in q
