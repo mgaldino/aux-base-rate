@@ -222,6 +222,23 @@ Notes:
 - `novelty_score` is clamped to `[0, 1]` and logged to the adjustment log when changed.
 - Evidence with `evidence_db < 10`, negative `evidence_db`, or invalid direction is discarded and logged.
 
+## Combined runner (MVP)
+Runs outside-view first and then inside-view using the outside output as priors.
+
+```bash
+combined-harness \
+  --input questions.sample.jsonl \
+  --mechanisms mechanisms.jsonl \
+  --evidence evidence.jsonl \
+  --priors-output results.priors.jsonl \
+  --output results.posterior.jsonl \
+  --model claude-3-5-sonnet-20240620 \
+  --prompts v0 \
+  --temperature 0.2 \
+  --discard-log discarded.jsonl \
+  --adjustment-log adjustments.jsonl
+```
+
 ## Example (BR_Q005)
 Input JSON (source):
 
