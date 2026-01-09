@@ -1,1 +1,3 @@
 {"question_id":"Q1","mechanisms":[{"id":"m1_precedent","label":"precedentes semelhantes","prior_weight":1.0}]}
+{"question_id":"Q2","mechanisms":[{"id":"m1_precedent","label":"precedentes semelhantes","prior_weight":1.0}]}
+{"question_id":"Q3","mechanisms":[{"id":"m1_precedent","label":"precedentes semelhantes","prior_weight":1.0}]}
