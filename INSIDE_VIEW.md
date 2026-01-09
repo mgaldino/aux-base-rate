@@ -81,8 +81,23 @@ Discard reasons (enum, MVP):
 - `missing_direction`
 - `missing_mechanism`
 
-Adjustment log (optional, non-discard):
+Adjustment log (optional, non-discard; separate JSONL file):
 - `novelty_clamped`
+
+Adjustment log (one line per adjustment):
+```json
+{
+  "evidence_id": "ev_2023_06_20_001",
+  "question_id": "BR_Q005",
+  "mechanism_id": "m3_quality",
+  "reason": "novelty_clamped",
+  "raw_novelty_score": 1.2,
+  "novelty_score": 1.0,
+  "source": "news",
+  "timestamp": "2023-06-20T12:00:00Z",
+  "notes": "Ajuste para limite superior"
+}
+```
 
 Output record (one line per (question_id x prompt_id)):
 ```json
