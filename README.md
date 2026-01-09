@@ -5,10 +5,12 @@ MVP prompt-iteration harness for outside-view base rates on binary political for
 ## Install
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 ```
+
+Python version: requires >=3.11 (tested with 3.13.3). Use `python3` from a 3.11+ install.
 
 Set your API key:
 
