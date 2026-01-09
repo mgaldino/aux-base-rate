@@ -1,26 +1,30 @@
 # Inside View Plan (Draft)
 
-This document defines a minimal, testable inside-view pipeline that can be
-implemented in steps.
+Plano de funcionalidade inside-view com foco em modularidade, testes e
+execucao reprodutivel via arquivos JSONL.
 
 ## Goals (P0)
-- Accept manual evidence as JSONL.
-- Define 3–5 mechanisms per question.
-- Update the outside-view base rate using discrete dB evidence with
-  correlation control by mechanism.
-- Avoid narrative fallacy and double counting.
+- Aceitar evidencias manuais em JSONL (entrada e saida).
+- Definir 3-5 mecanismos por pergunta.
+- Atualizar o outside-view com evidencias em dB, com controle de correlacao
+  dentro de cada mecanismo.
+- Evitar narrativa e dupla contagem.
+- Um registro de saida por (question_id x prompt_id).
+- Pipeline separado do outside-view (CLI/runner proprio) usando JSONL.
 
 ## Evidence Scale (dB)
-- 10 dB: weak (minimum usable; below 10 dB discard)
-- 20 dB: moderate
-- 30 dB: strong
-- 40 dB: very strong (ceiling)
+- 10 dB: fraca (minimo aceitavel; abaixo de 10 descartar)
+- 20 dB: moderada
+- 30 dB: forte
+- 40 dB: muito forte (teto)
 
 ## Guardrails
-- Every evidence item must map to exactly one mechanism.
-- Evidence within the same mechanism is correlated.
-- Deduplicate near-duplicate items; reduce weight for low novelty.
-- No case-specific narrative without a mechanism + observable signal.
+- Cada evidencia mapeia para exatamente um mecanismo.
+- Evidencias no mesmo mecanismo sao correlacionadas.
+- Deduplicar evidencias quase identicas; reduzir peso por baixa novidade.
+- Sem narrativa especifica sem mecanismo + sinal observavel.
+- Evidencias com `evidence_db` negativo devem ser descartadas e logadas.
+- Direcao invalida deve ser descartada e logada.
 
 ## Data Schemas (JSONL)
 
@@ -54,30 +58,94 @@ Evidence items (one line per item):
 }
 ```
 
+Discard log (one line per discarded item):
+```json
+{
+  "evidence_id": "ev_2023_06_20_001",
+  "question_id": "BR_Q005",
+  "mechanism_id": "m3_quality",
+  "reason": "db_below_threshold",
+  "raw_direction": "SIM",
+  "evidence_db": 5,
+  "novelty_score": 0.8,
+  "source": "news",
+  "timestamp": "2023-06-20T12:00:00Z",
+  "notes": "Evidencia abaixo do minimo"
+}
+```
+
+Discard reasons (enum, MVP):
+- `db_below_threshold`
+- `db_negative`
+- `invalid_direction`
+- `missing_direction`
+- `missing_mechanism`
+
+Adjustment log (optional, non-discard):
+- `novelty_clamped`
+
+Output record (one line per (question_id x prompt_id)):
+```json
+{
+  "question_id": "BR_Q005",
+  "prompt_id": "v0",
+  "prior": 0.30,
+  "posterior": 0.24,
+  "by_mechanism": [
+    {"mechanism_id": "m3_quality", "raw_db": -8.0, "effective_db": -6.5}
+  ],
+  "meta": {
+    "run_ts": "2025-01-01T00:00:00Z",
+    "version": "inside_view_v1"
+  }
+}
+```
+
 ## Update Rule (dB)
 
 Let `p` be the outside-view base rate (prior).
 
 For each mechanism `m`:
 1) Collect evidence items `i` mapped to `m`.
-2) Compute effective dB using correlation control:
+2) Normalize and validate evidence:
+   - `novelty_score` default = 1.0 se ausente
+   - clamp `novelty_score` para [0, 1] (logar se ajustado)
+   - descartar `evidence_db` < 10 (logar)
+   - descartar `evidence_db` negativo (logar)
+   - descartar direcao invalida (logar)
+3) Compute effective dB using correlation control (MVP):
+   - Opcoes principais a testar:
+     a) Top-k por mecanismo (pelo maior `evidence_db * novelty_score`; k=3)
+     b) Desconto por fonte (reduzir peso para `source` repetido)
+   - Fallback:
+     c) Cap por mecanismo (limitar `effective_db_m` a ±20 dB)
+   - Uma unica opcao deve ser default no MVP, mantendo as outras como alternativa
+     documentada.
    - `raw_db = sum(evidence_db_i * novelty_score_i * direction_sign)`
-   - `corr_discount = 1 / sqrt(n_items_m)` (or `1 / (1 + 0.3*(n-1))`)
-   - `effective_db_m = raw_db * corr_discount`
+   - `effective_db_m = raw_db` apos aplicar a estrategia escolhida
 
 Total update:
 ```
 logit(posterior) = logit(prior) + sum(effective_db_m) * ln(10) / 10
 ```
 
-## Implementation Steps
-1) Add `inside_view.py` with a pure function:
-   - `apply_inside_view(prior, mechanisms, evidence_items) -> posterior`
-2) Add input files:
-   - `mechanisms.jsonl`
-   - `evidence.jsonl`
-3) Add tests for:
-   - dB scale handling and discard rule (<10 dB)
-   - mechanism correlation discount
-   - direction handling (SIM/NO)
-4) Integrate into `runner.py` (optional, after tests).
+Direction handling:
+- "SIM" => +1
+- "NAO"/"NO" => -1
+
+## Implementation Steps (test-first)
+1) Tests:
+   - descarte de evidencias < 10 dB
+   - descarte de evidencias com `evidence_db` negativo
+   - direcao SIM/NAO
+   - controle de correlacao (top-k e desconto por fonte; cap como fallback)
+   - log de descartes (motivos esperados)
+   - agregacao por mecanismo e soma no logit
+2) Modulos (separados):
+   - `io.py`: leitura/escrita JSONL (mechanisms/evidence/output)
+   - `parse.py`: validacao e normalizacao (direcao, dB, novelty)
+   - `runner.py`: orquestracao do pipeline inside-view
+3) Logica pura:
+   - `inside_view.py` com `apply_inside_view(prior, mechanisms, evidence_items)`
+4) Integracao opcional:
+   - CLI/runner principal so apos testes passarem
