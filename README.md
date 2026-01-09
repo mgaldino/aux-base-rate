@@ -64,7 +64,7 @@ report-harness \
 Notes:
 - `--questions` is optional; if provided with an `outcome` field, the report includes Brier scores.
 - You can pass comma-separated paths to `--outside` or `--inside`.
- - Use `--mechanisms` and `--evidence` to include per-question details.
+- Use `--mechanisms` and `--evidence` to include per-question details.
 
 ## Mechanisms (LLM)
 
@@ -79,6 +79,8 @@ mechanism-harness \
 ```
 
 Mechanisms JSONL includes `mechanisms_yes` and `mechanisms_no` per question.
+Evidence JSONL includes `hypothesis` (YES/NO) and `direction` relative to that hypothesis.
+Legacy `mechanisms` is still accepted but considered deprecated.
 
 ## Evidence (GDELT + LLM)
 

@@ -70,6 +70,7 @@ Evidence items (one line per item):
   "notes": "Evidencia direta sobre fragilidade da acusacao"
 }
 ```
+`direction` e interpretada em relacao a `hypothesis`.
 
 LLM prompt (evidence_db):
 - O modelo deve escolher apenas entre {10, 20, 30, 40}.

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Evidence items (JSONL line)",
   "type": "object",
-  "required": ["evidence_id", "question_id", "mechanism_id", "direction", "evidence_db"],
+  "required": ["evidence_id", "question_id", "mechanism_id", "hypothesis", "direction", "evidence_db"],
   "properties": {
     "evidence_id": { "type": "string" },
     "question_id": { "type": "string" },
