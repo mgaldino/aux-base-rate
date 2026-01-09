@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Evidence items (JSONL line)",
+  "type": "object",
+  "required": ["evidence_id", "question_id", "mechanism_id", "direction", "evidence_db"],
+  "properties": {
+    "evidence_id": { "type": "string" },
+    "question_id": { "type": "string" },
+    "mechanism_id": { "type": "string" },
+    "direction": { "type": "string" },
+    "evidence_db": { "type": "number", "enum": [10, 20, 30, 40] },
+    "novelty_score": { "type": "number" },
+    "source": { "type": "string" },
+    "timestamp": { "type": "string" },
+    "notes": { "type": "string" }
+  },
+  "additionalProperties": true
+}

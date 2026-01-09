@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Mechanisms (JSONL line)",
+  "type": "object",
+  "required": ["question_id", "mechanisms"],
+  "properties": {
+    "question_id": { "type": "string" },
+    "mechanisms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "prior_weight": { "type": "number" }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

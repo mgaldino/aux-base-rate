@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Outside-view questions (JSONL line)",
+  "type": "object",
+  "required": ["question_id", "question"],
+  "properties": {
+    "question_id": { "type": "string" },
+    "question": { "type": "string" },
+    "reference_date": { "type": "string" },
+    "region": { "type": "string" },
+    "notes": { "type": "string" }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Inside-view output record (JSONL line)",
+  "type": "object",
+  "required": ["question_id", "prompt_id", "prior", "posterior", "by_mechanism", "meta"],
+  "properties": {
+    "question_id": { "type": "string" },
+    "prompt_id": { "type": "string" },
+    "prior": { "type": "number" },
+    "posterior": { "type": "number" },
+    "by_mechanism": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["mechanism_id", "raw_db", "effective_db"],
+        "properties": {
+          "mechanism_id": { "type": "string" },
+          "raw_db": { "type": "number" },
+          "effective_db": { "type": "number" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "meta": {
+      "type": "object",
+      "required": ["run_ts", "version"],
+      "properties": {
+        "run_ts": { "type": "string" },
+        "version": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

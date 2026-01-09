@@ -180,6 +180,16 @@ Only `question_id` and `question` are required; missing optional fields are trea
 
 If your source JSON uses different keys (e.g., `id`, `title`, `description`), map them into the schema above.
 
+Formal schemas:
+- `schemas/questions.schema.json`
+- `schemas/priors.schema.json`
+- `schemas/mechanisms.schema.json`
+- `schemas/evidence.schema.json`
+- `schemas/outside_view_output.schema.json`
+- `schemas/inside_view_output.schema.json`
+- `schemas/discard_log.schema.json`
+- `schemas/adjustment_log.schema.json`
+
 ## Output schema (JSONL)
 One record per `(question_id × prompt_id)`:
 

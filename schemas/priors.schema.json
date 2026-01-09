@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Outside-view priors (JSONL line)",
+  "type": "object",
+  "required": ["question_id", "prompt_id", "base_rate"],
+  "properties": {
+    "question_id": { "type": "string" },
+    "prompt_id": { "type": "string" },
+    "base_rate": { "type": "number", "exclusiveMinimum": 0, "exclusiveMaximum": 100 }
+  },
+  "additionalProperties": true
+}

@@ -72,6 +72,7 @@ LLM prompt (evidence_db):
 - Quanto mais a evidencia for especificamente consistente com o mecanismo-alvo (e inconsistente
   com explicacoes rivais plausiveis), maior o dB.
 - Se nao conseguir justificar pelo menos 10 dB, retornar 0 e o item sera descartado.
+- Prompt canonico: `src/inside_view_harness/prompts.py`.
 
 Discard log (one line per discarded item):
 ```json

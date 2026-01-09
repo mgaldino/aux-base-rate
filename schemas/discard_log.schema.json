@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Discard log entry (JSONL line)",
+  "type": "object",
+  "required": ["evidence_id", "question_id", "mechanism_id", "reason"],
+  "properties": {
+    "evidence_id": { "type": ["string", "null"] },
+    "question_id": { "type": ["string", "null"] },
+    "mechanism_id": { "type": ["string", "null"] },
+    "reason": { "type": "string" },
+    "raw_direction": { "type": ["string", "null"] },
+    "evidence_db": { "type": ["number", "null"] },
+    "novelty_score": { "type": ["number", "null"] },
+    "source": { "type": ["string", "null"] },
+    "timestamp": { "type": ["string", "null"] },
+    "notes": { "type": ["string", "null"] }
+  },
+  "additionalProperties": true
+}
