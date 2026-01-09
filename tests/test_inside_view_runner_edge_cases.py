@@ -75,6 +75,71 @@ def test_runner_raises_on_mechanism_missing_id(tmp_path: Path) -> None:
         )
 
 
+def test_runner_accepts_case_insensitive_question_ids(tmp_path: Path) -> None:
+    priors_path = tmp_path / "priors.jsonl"
+    mechanisms_path = tmp_path / "mechanisms.jsonl"
+    evidence_path = tmp_path / "evidence.jsonl"
+    output_path = tmp_path / "output.jsonl"
+
+    _write_jsonl(priors_path, [{"question_id": "q1", "prompt_id": "v0", "base_rate": 50}])
+    _write_jsonl(
+        mechanisms_path,
+        [{"question_id": "Q1", "mechanisms": [{"id": "m1"}]}],
+    )
+    _write_jsonl(
+        evidence_path,
+        [
+            {
+                "evidence_id": "ev1",
+                "question_id": "q1",
+                "mechanism_id": "m1",
+                "direction": "YES",
+                "evidence_db": 10,
+            }
+        ],
+    )
+
+    runner.run(
+        priors_path=str(priors_path),
+        mechanisms_path=str(mechanisms_path),
+        evidence_path=str(evidence_path),
+        output_path=str(output_path),
+    )
+
+    with output_path.open("r", encoding="utf-8") as f:
+        record = json.loads(f.readline())
+    assert record["question_id"] == "q1"
+    assert record["by_mechanism"][0]["raw_db"] == 10.0
+
+
+def test_runner_rejects_question_id_collision(tmp_path: Path) -> None:
+    priors_path = tmp_path / "priors.jsonl"
+    mechanisms_path = tmp_path / "mechanisms.jsonl"
+    evidence_path = tmp_path / "evidence.jsonl"
+    output_path = tmp_path / "output.jsonl"
+
+    _write_jsonl(
+        priors_path,
+        [
+            {"question_id": "q1", "prompt_id": "v0", "base_rate": 50},
+            {"question_id": "Q1", "prompt_id": "v1", "base_rate": 50},
+        ],
+    )
+    _write_jsonl(
+        mechanisms_path,
+        [{"question_id": "q1", "mechanisms": [{"id": "m1"}]}],
+    )
+    _write_jsonl(evidence_path, [])
+
+    with pytest.raises(ValueError, match="question_id collision"):
+        runner.run(
+            priors_path=str(priors_path),
+            mechanisms_path=str(mechanisms_path),
+            evidence_path=str(evidence_path),
+            output_path=str(output_path),
+        )
+
+
 def test_runner_keeps_prior_without_evidence(tmp_path: Path) -> None:
     priors_path = tmp_path / "priors.jsonl"
     mechanisms_path = tmp_path / "mechanisms.jsonl"

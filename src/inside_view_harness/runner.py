@@ -16,12 +16,30 @@ def _resolve_run_ts(run_ts: Optional[str]) -> str:
     return run_ts or _utc_timestamp()
 
 
+def _normalize_question_id(value: object, context: str) -> str:
+    if value is None:
+        raise ValueError(f"missing question_id in {context}")
+    text = str(value).strip()
+    if not text:
+        raise ValueError(f"missing question_id in {context}")
+    return text.casefold()
+
+
+def _normalize_question_id_optional(value: object) -> Optional[str]:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    return text.casefold()
+
+
 def _build_mechanism_map(rows: list[dict]) -> dict[str, list[dict]]:
     mapping: dict[str, list[dict]] = {}
+    seen: dict[str, str] = {}
     for idx, row in enumerate(rows):
         qid = row.get("question_id")
-        if qid is None or (isinstance(qid, str) and not qid.strip()):
-            raise ValueError(f"missing question_id in mechanisms row {idx}")
+        normalized_qid = _normalize_question_id(qid, f"mechanisms row {idx}")
         mechanisms = row.get("mechanisms")
         if mechanisms is None:
             raise ValueError(f"missing mechanisms for question_id={qid}")
@@ -33,7 +51,12 @@ def _build_mechanism_map(rows: list[dict]) -> dict[str, list[dict]]:
                 isinstance(mechanism_id, str) and not mechanism_id.strip()
             ):
                 raise ValueError(f"missing mechanism id for question_id={qid}")
-        mapping[qid] = mechanisms
+        if normalized_qid in seen and seen[normalized_qid] != qid:
+            raise ValueError(
+                "question_id collision: {a} vs {b}".format(a=seen[normalized_qid], b=qid)
+            )
+        seen[normalized_qid] = str(qid)
+        mapping[normalized_qid] = mechanisms
     return mapping
 
 
@@ -66,14 +89,15 @@ def run(
 
     for evidence in evidence_rows:
         qid = evidence.get("question_id")
-        mechanism_ids = mechanism_ids_map.get(qid, set())
+        normalized_qid = _normalize_question_id_optional(qid)
+        mechanism_ids = mechanism_ids_map.get(normalized_qid, set())
         normalized, discard, adjustment_rows = normalize_evidence(evidence, mechanism_ids)
         if discard:
             discards.append(discard)
         if adjustment_rows:
             adjustments.extend(adjustment_rows)
         if normalized:
-            evidence_by_question.setdefault(qid, []).append(normalized)
+            evidence_by_question.setdefault(normalized_qid or "", []).append(normalized)
 
     cfg = InsideViewConfig(
         strategy=strategy,
@@ -84,8 +108,15 @@ def run(
 
     records: list[dict] = []
     resolved_run_ts = _resolve_run_ts(run_ts)
+    seen_priors: dict[str, str] = {}
     for prior_row in prior_rows:
         qid = prior_row.get("question_id")
+        normalized_qid = _normalize_question_id(qid, "priors")
+        if normalized_qid in seen_priors and seen_priors[normalized_qid] != qid:
+            raise ValueError(
+                "question_id collision: {a} vs {b}".format(a=seen_priors[normalized_qid], b=qid)
+            )
+        seen_priors[normalized_qid] = str(qid)
         prompt_id = prior_row.get("prompt_id")
         base_rate = prior_row.get("base_rate")
         if base_rate is None:
@@ -101,10 +132,10 @@ def run(
                 f"base_rate_out_of_bounds for question_id={qid} prompt_id={prompt_id}"
             )
         prior = base_rate_value / 100.0
-        mechanisms = mechanism_map.get(qid)
+        mechanisms = mechanism_map.get(normalized_qid)
         if mechanisms is None:
             raise ValueError(f"missing mechanisms for question_id={qid}")
-        evidence_items = evidence_by_question.get(qid, [])
+        evidence_items = evidence_by_question.get(normalized_qid, [])
         posterior, by_mechanism = apply_inside_view(prior, mechanisms, evidence_items, cfg)
         record = {
             "question_id": qid,

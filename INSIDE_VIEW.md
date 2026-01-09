@@ -25,6 +25,8 @@ execucao reprodutivel via arquivos JSONL.
 - Sem narrativa especifica sem mecanismo + sinal observavel.
 - Cada mecanismo deve ter `id` valido; mecanismos sem `id` sao erro de entrada.
 - Cada `question_id` em priors deve ter mecanismos correspondentes.
+- `question_id` e tratado de forma case-insensitive para matching; colisao entre ids
+  que diferem apenas por caixa gera erro.
 - Evidencias com `evidence_db` negativo devem ser descartadas e logadas.
 - Evidencias com `evidence_db` ausente ou invalido devem ser descartadas e logadas.
 - Direcao invalida deve ser descartada e logada.
