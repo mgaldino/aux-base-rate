@@ -154,15 +154,15 @@ logit(posterior) = logit(prior) + sum(effective_db_m) * ln(10) / 10
 ```
 
 Direction handling:
-- "SIM" => +1
-- "NAO"/"NO" => -1
+- "YES"/"SIM"/"TRUE" => +1 (normaliza para "YES")
+- "NO"/"NAO"/"FALSE" => -1 (normaliza para "NO")
 
 ## Implementation Steps (test-first)
 1) Tests:
    - descarte de evidencias < 10 dB
    - descarte de evidencias com `evidence_db` negativo
    - descarte de evidencias com `evidence_db` fora de {10, 20, 30, 40}
-   - direcao SIM/NAO
+   - direcao normalizada (SIM/NAO/YES/NO)
    - controle de correlacao (top-k e desconto por fonte; cap como fallback)
    - log de descartes (motivos esperados)
    - agregacao por mecanismo e soma no logit

@@ -223,6 +223,7 @@ Notes:
 - `novelty_score` defaults to `1.0` when missing.
 - `novelty_score` is clamped to `[0, 1]` and logged to the adjustment log when changed.
 - Evidence with `evidence_db < 10`, negative `evidence_db`, or invalid direction is discarded and logged.
+- Direction is normalized from `YES/NO/SIM/NAO/TRUE/FALSE`; anything else is discarded.
 - Evidence with missing or non-numeric `evidence_db` is discarded and logged.
 - Evidence with `evidence_db` not in {10, 20, 30, 40} is discarded and logged.
 - Evidence with invalid `novelty_score` is discarded and logged.
