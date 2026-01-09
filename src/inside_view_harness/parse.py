@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
@@ -53,13 +54,22 @@ def normalize_evidence(
     if direction_reason:
         return None, _discard_record(evidence, direction_reason), []
 
-    evidence_db = float(evidence.get("evidence_db"))
+    if "evidence_db" not in evidence or evidence.get("evidence_db") is None:
+        return None, _discard_record(evidence, "missing_db"), []
+    try:
+        evidence_db = float(evidence.get("evidence_db"))
+    except (TypeError, ValueError):
+        return None, _discard_record(evidence, "invalid_db"), []
+    if not math.isfinite(evidence_db):
+        return None, _discard_record(evidence, "invalid_db"), []
     if evidence_db < 0:
         return None, _discard_record(evidence, "db_negative"), []
     if evidence_db < 10:
         return None, _discard_record(evidence, "db_below_threshold"), []
 
-    novelty_score, adjustment = _normalize_novelty(evidence)
+    novelty_score, adjustment, novelty_error = _normalize_novelty(evidence)
+    if novelty_error:
+        return None, _discard_record(evidence, novelty_error), []
 
     normalized = NormalizedEvidence(
         evidence_id=evidence.get("evidence_id"),
@@ -76,15 +86,18 @@ def normalize_evidence(
     return normalized, None, adjustments
 
 
-def _normalize_novelty(evidence: dict) -> Tuple[float, Optional[dict]]:
+def _normalize_novelty(evidence: dict) -> Tuple[float, Optional[dict], Optional[str]]:
     raw_novelty = evidence.get("novelty_score")
     if raw_novelty is None:
-        return 1.0, None
-    novelty_score = float(raw_novelty)
+        return 1.0, None, None
+    try:
+        novelty_score = float(raw_novelty)
+    except (TypeError, ValueError):
+        return 1.0, None, "invalid_novelty"
     clamped = min(1.0, max(0.0, novelty_score))
     if clamped == novelty_score:
-        return novelty_score, None
-    return clamped, _adjustment_record(evidence, "novelty_clamped", novelty_score, clamped)
+        return novelty_score, None, None
+    return clamped, _adjustment_record(evidence, "novelty_clamped", novelty_score, clamped), None
 
 
 def _discard_record(evidence: dict, reason: str) -> dict:

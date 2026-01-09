@@ -221,6 +221,20 @@ Notes:
 - `novelty_score` defaults to `1.0` when missing.
 - `novelty_score` is clamped to `[0, 1]` and logged to the adjustment log when changed.
 - Evidence with `evidence_db < 10`, negative `evidence_db`, or invalid direction is discarded and logged.
+- Evidence with missing or non-numeric `evidence_db` is discarded and logged.
+- Evidence with invalid `novelty_score` is discarded and logged.
+- Evidence with missing/unknown mechanism is discarded and logged.
+
+Inside-view CLI:
+```bash
+inside-view-harness \
+  --priors results.priors.jsonl \
+  --mechanisms mechanisms.jsonl \
+  --evidence evidence.jsonl \
+  --output results.posterior.jsonl \
+  --discard-log discarded.jsonl \
+  --adjustment-log adjustments.jsonl
+```
 
 ## Combined runner (MVP)
 Runs outside-view first and then inside-view using the outside output as priors.

@@ -51,6 +51,51 @@ def test_normalize_evidence_discards_invalid_db() -> None:
     assert adjustments == []
 
 
+def test_normalize_evidence_discards_missing_or_invalid_db() -> None:
+    missing_db = {
+        "evidence_id": "ev_missing",
+        "question_id": "q1",
+        "mechanism_id": "m1",
+        "direction": "YES",
+        "source": "news",
+    }
+    normalized, discard, adjustments = parse.normalize_evidence(missing_db, {"m1"})
+    assert normalized is None
+    assert discard is not None
+    assert discard["reason"] == "missing_db"
+    assert adjustments == []
+
+    invalid_db = {
+        "evidence_id": "ev_invalid",
+        "question_id": "q1",
+        "mechanism_id": "m1",
+        "direction": "YES",
+        "evidence_db": "NaN",
+        "source": "news",
+    }
+    normalized, discard, adjustments = parse.normalize_evidence(invalid_db, {"m1"})
+    assert normalized is None
+    assert discard is not None
+    assert discard["reason"] == "invalid_db"
+    assert adjustments == []
+
+
+def test_normalize_evidence_discards_invalid_novelty() -> None:
+    evidence = {
+        "evidence_id": "ev_bad_novelty",
+        "question_id": "q1",
+        "mechanism_id": "m1",
+        "direction": "YES",
+        "evidence_db": 12,
+        "novelty_score": "oops",
+        "source": "news",
+    }
+    normalized, discard, adjustments = parse.normalize_evidence(evidence, {"m1"})
+    assert normalized is None
+    assert discard is not None
+    assert discard["reason"] == "invalid_novelty"
+    assert adjustments == []
+
 def test_normalize_evidence_clamps_novelty() -> None:
     evidence = {
         "evidence_id": "ev2",
