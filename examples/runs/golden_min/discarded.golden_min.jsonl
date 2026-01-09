@@ -1,0 +1,1 @@
+{"evidence_id":"ev4","question_id":"GOLDEN_Q1","mechanism_id":"m1","reason":"db_below_threshold","raw_direction":"YES","evidence_db":5,"novelty_score":1.0,"source":"test","timestamp":"2025-01-01T00:00:00Z","notes":"discarded below threshold"}

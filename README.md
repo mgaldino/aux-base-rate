@@ -253,6 +253,38 @@ Inside-view example files:
 - `examples/inside_view/evidence.jsonl`
 - `examples/inside_view/posterior.jsonl`
 
+Example naming conventions (run_id = short identifier like `br_q005` or `golden_min`):
+- `examples/runs/<run_id>/priors.<run_id>.jsonl`
+- `examples/runs/<run_id>/mechanisms.<run_id>.jsonl`
+- `examples/runs/<run_id>/evidence.<run_id>.jsonl`
+- `examples/runs/<run_id>/results.priors.<run_id>.jsonl`
+- `examples/runs/<run_id>/results.inside_view.<run_id>.jsonl`
+- `examples/runs/<run_id>/results.combined.<run_id>.jsonl`
+- `examples/runs/<run_id>/discarded.<run_id>.jsonl`
+- `examples/runs/<run_id>/adjustments.<run_id>.jsonl`
+- `examples/runs/<run_id>/discarded.combined.<run_id>.jsonl`
+- `examples/runs/<run_id>/adjustments.combined.<run_id>.jsonl`
+
+Golden run (deterministic, inside-view only):
+- `examples/runs/golden_min/priors.golden_min.jsonl`
+- `examples/runs/golden_min/mechanisms.golden_min.jsonl`
+- `examples/runs/golden_min/evidence.golden_min.jsonl`
+- `examples/runs/golden_min/results.inside_view.golden_min.jsonl`
+- `examples/runs/golden_min/discarded.golden_min.jsonl`
+- `examples/runs/golden_min/adjustments.golden_min.jsonl`
+
+Re-run the golden example with a fixed timestamp:
+```bash
+inside-view-harness \
+  --priors examples/runs/golden_min/priors.golden_min.jsonl \
+  --mechanisms examples/runs/golden_min/mechanisms.golden_min.jsonl \
+  --evidence examples/runs/golden_min/evidence.golden_min.jsonl \
+  --output /tmp/results.inside_view.golden_min.jsonl \
+  --discard-log /tmp/discarded.golden_min.jsonl \
+  --adjustment-log /tmp/adjustments.golden_min.jsonl \
+  --run-ts 2025-01-01T00:00:00Z
+```
+
 Real run example (BR_Q005):
 - `examples/runs/br_q005/priors.br_q005.jsonl`
 - `examples/runs/br_q005/mechanisms.br_q005.jsonl`

@@ -1,0 +1,4 @@
+{"evidence_id":"ev1","question_id":"GOLDEN_Q1","mechanism_id":"m1","direction":"YES","evidence_db":20,"novelty_score":1.0,"source":"test","timestamp":"2025-01-01T00:00:00Z","notes":"supports mechanism"}
+{"evidence_id":"ev2","question_id":"GOLDEN_Q1","mechanism_id":"m1","direction":"NO","evidence_db":10,"novelty_score":1.0,"source":"test","timestamp":"2025-01-01T00:00:00Z","notes":"weak against mechanism"}
+{"evidence_id":"ev3","question_id":"GOLDEN_Q1","mechanism_id":"m1","direction":"YES","evidence_db":30,"novelty_score":1.2,"source":"test","timestamp":"2025-01-01T00:00:00Z","notes":"novelty clamped"}
+{"evidence_id":"ev4","question_id":"GOLDEN_Q1","mechanism_id":"m1","direction":"YES","evidence_db":5,"novelty_score":1.0,"source":"test","timestamp":"2025-01-01T00:00:00Z","notes":"discarded below threshold"}

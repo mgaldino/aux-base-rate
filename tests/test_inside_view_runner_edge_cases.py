@@ -145,3 +145,27 @@ def test_runner_rejects_extreme_base_rate(tmp_path: Path) -> None:
             evidence_path=str(evidence_path),
             output_path=str(output_path),
         )
+
+
+def test_runner_uses_provided_run_ts(tmp_path: Path) -> None:
+    priors_path = tmp_path / "priors.jsonl"
+    mechanisms_path = tmp_path / "mechanisms.jsonl"
+    evidence_path = tmp_path / "evidence.jsonl"
+    output_path = tmp_path / "output.jsonl"
+
+    _write_jsonl(priors_path, [{"question_id": "q1", "prompt_id": "v0", "base_rate": 50}])
+    _write_jsonl(mechanisms_path, [{"question_id": "q1", "mechanisms": [{"id": "m1"}]}])
+    _write_jsonl(evidence_path, [])
+
+    run_ts = "2025-01-01T00:00:00Z"
+    runner.run(
+        priors_path=str(priors_path),
+        mechanisms_path=str(mechanisms_path),
+        evidence_path=str(evidence_path),
+        output_path=str(output_path),
+        run_ts=run_ts,
+    )
+
+    with output_path.open("r", encoding="utf-8") as f:
+        record = json.loads(f.readline())
+    assert record["meta"]["run_ts"] == run_ts

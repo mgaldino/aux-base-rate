@@ -12,6 +12,10 @@ def _utc_timestamp() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()
 
 
+def _resolve_run_ts(run_ts: Optional[str]) -> str:
+    return run_ts or _utc_timestamp()
+
+
 def _build_mechanism_map(rows: list[dict]) -> dict[str, list[dict]]:
     mapping: dict[str, list[dict]] = {}
     for idx, row in enumerate(rows):
@@ -44,6 +48,7 @@ def run(
     top_k: int = 3,
     cap_db: float = 15.0,
     source_repeat_discount: float = 0.5,
+    run_ts: Optional[str] = None,
 ) -> dict:
     prior_rows = read_jsonl(priors_path)
     mechanism_rows = read_jsonl(mechanisms_path)
@@ -78,6 +83,7 @@ def run(
     )
 
     records: list[dict] = []
+    resolved_run_ts = _resolve_run_ts(run_ts)
     for prior_row in prior_rows:
         qid = prior_row.get("question_id")
         prompt_id = prior_row.get("prompt_id")
@@ -107,7 +113,7 @@ def run(
             "posterior": posterior,
             "by_mechanism": by_mechanism,
             "meta": {
-                "run_ts": _utc_timestamp(),
+                "run_ts": resolved_run_ts,
                 "version": "inside_view_v1",
             },
         }
@@ -140,6 +146,7 @@ def main() -> None:
     parser.add_argument("--top-k", type=int, default=3)
     parser.add_argument("--cap-db", type=float, default=15.0)
     parser.add_argument("--source-repeat-discount", type=float, default=0.5)
+    parser.add_argument("--run-ts", help="Override run timestamp (ISO-8601)")
     args = parser.parse_args()
 
     summary = run(
@@ -153,6 +160,7 @@ def main() -> None:
         top_k=args.top_k,
         cap_db=args.cap_db,
         source_repeat_discount=args.source_repeat_discount,
+        run_ts=args.run_ts,
     )
 
     print(
